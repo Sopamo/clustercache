@@ -14,5 +14,17 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
+    $apcu = app(\App\ClusterCache\ApcuCache::class);
+
+    logger('Cache exists before saving: ' . $apcu->exists('pages'));
+    logger(json_encode($apcu->read('pages')));
+
+    $pages = \App\Models\Page::take(100)
+        ->get();
+
+/*    $apcu->write('pages', $pages);*/
+
+    logger('Cache exists after saving: ' . $apcu->exists('pages'));
+
     return view('welcome');
 });
