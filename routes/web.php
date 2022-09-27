@@ -14,17 +14,47 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
+    return view('welcome');
+});
+
+Route::get('/tests', function () {
     $apcu = app(\App\ClusterCache\ApcuCache::class);
 
-    logger('Cache exists before saving: ' . $apcu->exists('pages'));
-    logger(json_encode($apcu->read('pages')));
 
-    $pages = \App\Models\Page::take(100)
+    $start = microtime(true);
+    $pages = \App\Models\Page::take(1000)
         ->get();
+    $end = microtime(true) - $start;
+    logger('Time of Eloquent fetching: ' . $end);
 
-/*    $apcu->write('pages', $pages);*/
+    $apcu->write('pages', $pages);
 
-    logger('Cache exists after saving: ' . $apcu->exists('pages'));
+    $bytes = strlen(serialize($pages)) * 8;
+
+
+    if( !($shmid=shmop_open(3,'n',0660,$bytes)) )
+        die('shmop_open failed.');
+    $shm_bytes_written = shmop_write($shmid, serialize($pages), 0);
+
+    for($i = 0; $i < 100;$i++) {
+        $start = microtime(true);
+        $apcuPages = $apcu->read('pages');
+        $end = microtime(true) - $start;
+        logger('Time of APCU_ fetching: #' . $i . ' ' . $end);
+
+        $start = microtime(true);
+        $shm_data = shmop_read($shmid, 0, $shm_bytes_written);
+        $end2 = microtime(true) - $start;
+        logger('Time of Shmop fetching: #' . $i . ' ' . $end2);
+        logger('Shmop is slower about: ' . $end2 - $end);
+        logger('--------------------------');
+    }
+
+    shmop_delete($shmid);
+
+    logger(json_encode($apcuPages));
+    logger('-------------');
+    logger(json_encode(unserialize($shm_data)));
 
     return view('welcome');
 });
