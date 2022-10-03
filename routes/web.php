@@ -17,6 +17,43 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/tests-open', function () {
+    $start = microtime(true);
+    $pages = \App\Models\Page::take(50000)
+        ->get();
+    $end = microtime(true) - $start;
+    logger('Time of DB query: ' . $end);
+
+        $bytes = strlen(serialize($pages)) * 8;
+
+        for($i=0;$i<100;$i++) {
+            if( !($shmid=shmop_open($i+1,'n',0660,$bytes)) )
+                die('shmop_open failed.');
+            $shm_bytes_written = shmop_write($shmid, serialize($pages), 0);
+
+        }
+
+        $totalTime = 0;
+        $totalTimeReading = 0;
+        for($i=0;$i<100;$i++) {
+            $start = microtime(true);
+            if( !($shmid=shmop_open($i+1,'a',0660,$bytes)) )
+                die('shmop_open failed.');
+            $end = microtime(true) - $start;
+            $totalTime += $end;
+    /*        logger('Time of shmop opening: ' . $end);*/
+        $start = microtime(true);
+        shmop_read($shmid, 0, $bytes);
+        $end = microtime(true) - $start;
+        $totalTimeReading += $end;
+/*        logger('Time of shmop reading: ' . $end);
+        logger('-------------');*/
+        shmop_delete($shmid);
+    }
+    logger('Average of opening: ' . $totalTime / 100);
+    logger('Average of reading: ' . $totalTimeReading / 100);
+
+});
 Route::get('/tests', function () {
     $apcu = app(\App\ClusterCache\ApcuCache::class);
 
