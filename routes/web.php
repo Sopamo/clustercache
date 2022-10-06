@@ -95,3 +95,32 @@ Route::get('/tests', function () {
 
     return view('welcome');
 });
+Route::get('/tests-workers-save', function () {
+    logger('Process ID ' . getmypid());
+
+    $pages = \App\Models\Page::take(1000)
+        ->get();
+
+    $bytes = strlen(serialize($pages)) * 8;
+
+    if( !($shmid=shmop_open(3,'n',0660,$bytes)) )
+        die('shmop_open failed.');
+    $shm_bytes_written = shmop_write($shmid, serialize($pages), 0);
+});
+
+Route::get('/tests-workers-read', function () {
+    logger('Process ID ' . getmypid());
+
+    $pages = \App\Models\Page::take(1000)
+        ->get();
+
+    $bytes = strlen(serialize($pages)) * 8;
+
+    if( !($shmid=shmop_open(3,'a',0660,$bytes)) ) {
+        logger('shmop_open failed');
+        die('shmop_open failed.');
+    }
+    $shm_data = shmop_read($shmid, 0, $bytes);
+
+    logger(strlen($shm_data));
+});
