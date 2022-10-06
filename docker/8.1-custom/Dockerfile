@@ -1,4 +1,4 @@
-FROM php:8.1-fpm-buster
+FROM php:8.1-fpm-bullseye
 
 # This is based on https://gitlab.com/ric_harvey/nginx-php-fpm
 
@@ -10,12 +10,16 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 ENV NGINX_VERSION 1.21.6
 
+ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+
+RUN chmod +x /usr/local/bin/install-php-extensions && \
+    install-php-extensions apcu shmop
+
 # resolves #166
 #ENV LD_PRELOAD /usr/lib/preloadable_libiconv.so php
 #RUN apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/community gnu-libiconv
 
 RUN adduser --system --home /var/cache/nginx --shell /bin/false --disabled-login --disabled-password --group nginx \
-  && sed -i "s#deb http://deb.debian.org/debian buster main#deb http://deb.debian.org/debian buster main contrib#g" /etc/apt/sources.list \
   && apt-get update \
   && apt-get install -y -q --no-install-recommends --no-install-suggests \
       wget \
@@ -52,8 +56,6 @@ RUN adduser --system --home /var/cache/nginx --shell /bin/false --disabled-login
       libxslt1-dev \
       libgd-dev \
       qtbase5-dev \
-      qt5-default \
-      ttf-dejavu \
       libgeoip-dev \
       libssl1.1 \
       gettext \
