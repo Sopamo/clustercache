@@ -127,25 +127,35 @@ Route::get('/tests-workers-read', function () {
 });
 
 Route::get('/tests-workers-multiple-saving', function () {
+
+    $message = str_repeat('Process #' . getmypid() . ' ', rand(500, 1200));
+    $messageBytes = strlen(serialize($message)) * 8;
     logger('Process ID ' . getmypid());
 
-    Storage::put('bytes.txt', '5');
     $bytes = (int) Storage::get('bytes.txt');
-    logger($bytes);
-    exit;
+    logger('Bytes from the file: ' . $bytes);
 
-    if( !($shmid=shmop_open(3,'w',0660,$bytes)) ) {
+    if(!$bytes) {
+        try {
+            $id=shmop_open(11, "a", 0, 0);
+            shmop_delete($id);
+            shmop_close($id);
+        } catch (\Exception $e) {
+
+        }
+
+        $shmid=shmop_open(11,'c',0660,9999999999);
+        shmop_close($shmid);
+    }
+    logger($bytes + $messageBytes);
+
+    if( !($shmid=shmop_open(11,'w',0660,0)) ) {
         logger('shmop_open failed');
         die('shmop_open failed.');
     }
+    $shm_bytes_written = shmop_write($shmid, serialize($message), $bytes);
+    $shm_data = shmop_read($shmid, $bytes, $messageBytes);
 
-    $message = str_repeat('Process #' . getmypid() . ' ', 10000);
-
-    $pages = \App\Models\Page::take(1000)
-        ->get();
-
-    $bytes = strlen(serialize($pages)) * 8;
-    $shm_data = shmop_read($shmid, 0, $bytes);
-
-    logger(strlen($shm_data));
+    logger(unserialize($shm_data) != false);
+    Storage::put('bytes.txt', $bytes + $messageBytes);
 });
