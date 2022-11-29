@@ -18,7 +18,8 @@ class CacheManager
     public static function init(MemoryDriver $memoryDriver):void
     {
         self::$memoryDriver = $memoryDriver->driver;
-        self::$metaInformation = new MetaInformation(self::$memoryDriver);
+        self::$metaInformation = new MetaInformation();
+        self::$metaInformation::init(self::$memoryDriver);
     }
 
     public static function put(string $key, mixed $value):bool {
@@ -33,7 +34,7 @@ class CacheManager
         HostCommunication::triggerAll(Trigger::$allTriggers['CACHE_KEY_IS_UPDATING'], $key);
         // TO DO: Implement putting into DB
         HostCommunication::triggerAll(Trigger::$allTriggers['CACHE_KEY_HAS_UPDATED'], $key);
-        self::$memoryDriver->put(self::$metaInformation->getMemoryKey($key), $value);
+        self::putIntoLocalCache($key, $value);
         DBLocker::release($key);
 
         return true;
@@ -50,28 +51,13 @@ class CacheManager
         }
 
         try{
-            /**
-             * old data:
-             * length: 5
-             * is_being_written: bool
-             * data: aaaaa
-             *
-             * new data:
-             * length: 8
-             * data: bbbbbbbb
-             *
-             * writing:
-             *  - set new meta information + is_being_written=true
-             *  - write new actual data
-             *  - set meta information is_being_written=false
-             * 
-             * reading:
-             * length: 8
-             */
-            $cachedValue = self::$memoryDriver->get($key);
+            $metaInformation = self::$metaInformation->getMeta($key);
+            // TO DO wait if is_being_written is true
+            $cachedValue = self::$memoryDriver->get($metaInformation['memory_key']);
+            $cachedValue = unserialize($cachedValue);
         } catch (NotFoundLocalCacheKeyException) {
             $cacheEntry = CacheEntry::where('key', $key)->first();
-            self::$memoryDriver->put(self::$metaInformation->getMemoryKey($cacheEntry->key), $cacheEntry->value);
+            self::putIntoLocalCache($key, $cacheEntry->value);
             $cachedValue = $cacheEntry->value;
         }
         return $cachedValue;
@@ -93,7 +79,8 @@ class CacheManager
         DBLocker::acquire($key);
         HostCommunication::triggerAll(Trigger::$allTriggers['CACHE_KEY_IS_UPDATING'], $key);
         CacheEntry::where('key', $key)->delete();
-        self::$memoryDriver->delete(self::$metaInformation->getMemoryKey($key));
+        self::$memoryDriver->delete(self::$metaInformation->getMeta($key)['memory_key']);
+        self::$metaInformation::deleteMeta($key);
         HostCommunication::triggerAll(Trigger::$allTriggers['CACHE_KEY_HAS_UPDATED'], $key);
         DBLocker::release($key);
 
@@ -103,5 +90,29 @@ class CacheManager
     private static function getNowFromDB():int {
         // TO DO
         return 777;
+    }
+
+    private static function putIntoLocalCache(string $key, mixed $value): void
+    {
+        $value = serialize($value);
+        $valueLength = strlen($value);
+
+        $metaInformation = self::$metaInformation->getMeta($key);
+        if(!$metaInformation) {
+            $memoryKey = self::$memoryDriver->createMemoryBlock($key, $valueLength);
+            $metaInformation = [
+                'memory_key' => $memoryKey,
+                'is_locked' => false,
+            ];
+        }
+        $metaInformation['is_being_written'] = true;
+        $metaInformation['length'] = $valueLength;
+        $metaInformation['updated_at'] = self::getNowFromDB();
+        self::$metaInformation->putMeta($key, $metaInformation);
+
+        self::$memoryDriver->put($metaInformation['memory_key'], $value);
+
+        $metaInformation['is_being_written'] = false;
+        self::$metaInformation->putMeta($key, $metaInformation);
     }
 }

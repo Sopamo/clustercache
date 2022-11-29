@@ -21,4 +21,9 @@ class ShmopDriver implements MemoryDriverInterface
     {
         // TODO: Implement delete() method.
     }
+
+    public static function createMemoryBlock(string $memoryKey, int $length): int
+    {
+        // TODO: Implement createMemoryBlock() method.
+    }
 }

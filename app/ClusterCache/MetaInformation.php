@@ -8,40 +8,39 @@ class MetaInformation
 {
     const RESERVED_KEY = 1;
 
-    /**
-     * @var MetaInformation[]
-     */
-    private static array $data;
     private static MemoryDriverInterface $memoryDriver;
 
-    public function __construct(private string $memoryKey, private int $length)
-    {
-    }
-
-    public static function init(MemoryDriverInterface $memoryDriver)
+    public static function init(MemoryDriverInterface $memoryDriver): void
     {
         self::$memoryDriver = $memoryDriver;
     }
 
-    private static function fetchData(): void
+    /**
+     * @param string $key
+     * @return array{memory_key: string, length: int, is_locked: bool, is_being_written: bool, updated_at: int}
+     */
+    public static function getMeta(string $key): array
     {
-        // TODO: I think array_map drops the array keys
-        self::$data = array_map(function ($data) {
-            return new self($data['memory_key'], $data['length']);
-        }, self::$memoryDriver->get(self::RESERVED_KEY));
+        return unserialize(self::$memoryDriver->get(self::RESERVED_KEY))[$key];
     }
 
     /**
      * @param string $key
-     * @return array{memory_key: string, length: int}
+     * @param array{memory_key: string, length: int, is_locked: bool, is_being_written: bool, updated_at: int} $value
+     * @return array
      */
-    public static function getCacheEntryMetaInformation(string $key): array
-    {
-        return self::$memoryDriver->get(self::RESERVED_KEY)[$key];
+    public static function putMeta(string $key, array $value): array {
+        $data = self::$memoryDriver->get(self::RESERVED_KEY);
+        $data[$key] = $value;
+        self::$memoryDriver->put(self::RESERVED_KEY, serialize($data));
+
+        return $data[$key];
     }
 
-    public function getMemoryKey(): mixed
-    {
-        return $this->memoryKey;
+    public static function deleteMeta(string $key): void {
+        $data = self::$memoryDriver->get(self::RESERVED_KEY);
+        unset($data[$key]);
+        self::$memoryDriver->put(self::RESERVED_KEY, serialize($data));
+
     }
 }
