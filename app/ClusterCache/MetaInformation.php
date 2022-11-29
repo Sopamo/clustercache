@@ -8,24 +8,40 @@ class MetaInformation
 {
     const RESERVED_KEY = 1;
 
-    private array $data;
-
     /**
-     * @param MemoryDriverInterface $memoryDriver
+     * @var MetaInformation[]
      */
-    public function __construct(private MemoryDriverInterface $memoryDriver)
+    private static array $data;
+    private static MemoryDriverInterface $memoryDriver;
+
+    public function __construct(private string $memoryKey, private int $length)
     {
     }
 
-    private function fetchData() {
-        $this->data = $this->memoryDriver->get(self::RESERVED_KEY);
+    public static function init(MemoryDriverInterface $memoryDriver)
+    {
+        self::$memoryDriver = $memoryDriver;
     }
 
-    public function getCacheEntryMetaInformation(string $key):array {
-        return $this->data[$key];
+    private static function fetchData(): void
+    {
+        // TODO: I think array_map drops the array keys
+        self::$data = array_map(function ($data) {
+            return new self($data['memory_key'], $data['length']);
+        }, self::$memoryDriver->get(self::RESERVED_KEY));
     }
 
-    public function getMemoryKey(string $cacheKey):mixed {
-        return $this->data[$cacheKey]['memory_key'];
+    /**
+     * @param string $key
+     * @return array{memory_key: string, length: int}
+     */
+    public static function getCacheEntryMetaInformation(string $key): array
+    {
+        return self::$memoryDriver->get(self::RESERVED_KEY)[$key];
+    }
+
+    public function getMemoryKey(): mixed
+    {
+        return $this->memoryKey;
     }
 }

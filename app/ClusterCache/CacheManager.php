@@ -50,6 +50,24 @@ class CacheManager
         }
 
         try{
+            /**
+             * old data:
+             * length: 5
+             * is_being_written: bool
+             * data: aaaaa
+             *
+             * new data:
+             * length: 8
+             * data: bbbbbbbb
+             *
+             * writing:
+             *  - set new meta information + is_being_written=true
+             *  - write new actual data
+             *  - set meta information is_being_written=false
+             * 
+             * reading:
+             * length: 8
+             */
             $cachedValue = self::$memoryDriver->get($key);
         } catch (NotFoundLocalCacheKeyException) {
             $cacheEntry = CacheEntry::where('key', $key)->first();
