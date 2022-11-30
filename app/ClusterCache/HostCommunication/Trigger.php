@@ -12,7 +12,6 @@ class Trigger
         'CACHE_KEY_HAS_UPDATED' => 'cache key has updated',
         'TEST_CONNECTION' => 'test connection',
         'fetch_hosts' => 'fetch hosts',
-        // ... more
     ];
 
     public string $value;

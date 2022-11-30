@@ -41,6 +41,5 @@ class MetaInformation
         $data = self::$memoryDriver->get(self::RESERVED_KEY);
         unset($data[$key]);
         self::$memoryDriver->put(self::RESERVED_KEY, serialize($data));
-
     }
 }

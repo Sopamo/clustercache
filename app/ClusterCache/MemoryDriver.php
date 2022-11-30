@@ -18,7 +18,7 @@ class MemoryDriver
         if (!in_array($driverName, array_keys(self::$allDrivers))) {
             throw new \InvalidArgumentException('The memory driver "' . $driverName . '" is unavailable');
         }
-        $this->driver = self::$allDrivers[$driverName];
+        $this->driver = new (self::$allDrivers[$driverName]);
     }
 
     public static function fromString(string $driverName):self
