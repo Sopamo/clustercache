@@ -1,8 +1,8 @@
 <?php
 
-namespace App\ClusterCache\Lockers;
+namespace App\ClusterCache\LockingMechanisms;
 
-class EventLocker
+class DBLocker
 {
     public static function acquire(string $key): void {
         // TO DOO
@@ -10,7 +10,7 @@ class EventLocker
     public static function release(string $key): void {
         // TO DOO
     }
-    public static function isLocked(string $key, int $waitByMMilliseconds = 200): bool {
+    public static function isLocked(string $key, int $called_at, int $waitByMMilliseconds = 200): bool {
         // TO DOO
         return false;
     }

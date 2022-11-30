@@ -6,8 +6,8 @@ use App\ClusterCache\Drivers\MemoryDriverInterface;
 use App\ClusterCache\Exceptions\NotFoundLocalCacheKeyException;
 use App\ClusterCache\HostCommunication\HostCommunication;
 use App\ClusterCache\HostCommunication\Event;
-use App\ClusterCache\Lockers\DBLocker;
-use App\ClusterCache\Lockers\EventLocker;
+use App\ClusterCache\LockingMechanisms\DBLocker;
+use App\ClusterCache\LockingMechanisms\EventLocker;
 use App\ClusterCache\Models\CacheEntry;
 
 class CacheManager
