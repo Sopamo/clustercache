@@ -17,7 +17,7 @@ class MetaInformation
 
     /**
      * @param string $key
-     * @return array{memory_key: string, length: int, is_locked: bool, is_being_written: bool, updated_at: int}
+     * @return array{memory_key: string, length: int, is_locked: bool, is_being_written: bool, updated_at: int, ttl: int}
      */
     public static function get(string $key): array
     {
@@ -26,7 +26,7 @@ class MetaInformation
 
     /**
      * @param string $key
-     * @param array{memory_key: string, length: int, is_locked: bool, is_being_written: bool, updated_at: int} $value
+     * @param array{memory_key: string, length: int, is_locked: bool, is_being_written: bool, updated_at: int, ttl: int} $value
      * @return array
      */
     public static function put(string $key, array $value): array {

@@ -22,7 +22,7 @@ class CacheManager
         self::$metaInformation::init(self::$memoryDriver);
     }
 
-    public static function put(string $key, mixed $value):bool {
+    public static function put(string $key, mixed $value, int $ttl = 0):bool {
         if(EventLocker::isLocked($key)) {
             return false;
         }
@@ -34,7 +34,7 @@ class CacheManager
         HostCommunication::triggerAll(Event::$allEvents['CACHE_KEY_IS_UPDATING'], $key);
         // TO DO: Implement putting into DB
         HostCommunication::triggerAll(Event::$allEvents['CACHE_KEY_HAS_UPDATED'], $key);
-        self::putIntoLocalCache($key, $value);
+        self::putIntoLocalCache($key, $value, $ttl);
         DBLocker::release($key);
 
         return true;
@@ -50,14 +50,19 @@ class CacheManager
             return false;
         }
 
+        $metaInformation = self::$metaInformation->get($key);
         try{
-            $metaInformation = self::$metaInformation->get($key);
             // TO DO wait if is_being_written is true
+            $expiredAt = $metaInformation['updated_at'] + $metaInformation['ttl'] * 1000;
+            if(self::getNowFromDB() > $expiredAt) {
+                $cacheEntry = CacheEntry::where('key', $key)->first();
+                self::putIntoLocalCache($key, $cacheEntry->value, $metaInformation['ttl']);
+            }
             $cachedValue = self::$memoryDriver->get($metaInformation['memory_key']);
             $cachedValue = unserialize($cachedValue);
         } catch (NotFoundLocalCacheKeyException) {
             $cacheEntry = CacheEntry::where('key', $key)->first();
-            self::putIntoLocalCache($key, $cacheEntry->value);
+            self::putIntoLocalCache($key, $cacheEntry->value, $metaInformation['ttl']);
             $cachedValue = $cacheEntry->value;
         }
         return $cachedValue;
@@ -92,7 +97,7 @@ class CacheManager
         return 777;
     }
 
-    private static function putIntoLocalCache(string $key, mixed $value): void
+    private static function putIntoLocalCache(string $key, mixed $value, int $ttl): void
     {
         $value = serialize($value);
         $valueLength = strlen($value);
@@ -108,6 +113,7 @@ class CacheManager
         $metaInformation['is_being_written'] = true;
         $metaInformation['length'] = $valueLength;
         $metaInformation['updated_at'] = self::getNowFromDB();
+        $metaInformation['ttl'] = $ttl;
         self::$metaInformation->put($key, $metaInformation);
 
         self::$memoryDriver->put($metaInformation['memory_key'], $value);
