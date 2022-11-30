@@ -51,7 +51,7 @@ class CacheManager
         }
 
         try{
-            $metaInformation = self::$metaInformation->getMeta($key);
+            $metaInformation = self::$metaInformation->get($key);
             // TO DO wait if is_being_written is true
             $cachedValue = self::$memoryDriver->get($metaInformation['memory_key']);
             $cachedValue = unserialize($cachedValue);
@@ -79,8 +79,8 @@ class CacheManager
         DBLocker::acquire($key);
         HostCommunication::triggerAll(Trigger::$allTriggers['CACHE_KEY_IS_UPDATING'], $key);
         CacheEntry::where('key', $key)->delete();
-        self::$memoryDriver->delete(self::$metaInformation->getMeta($key)['memory_key']);
-        self::$metaInformation::deleteMeta($key);
+        self::$memoryDriver->delete(self::$metaInformation->get($key)['memory_key']);
+        self::$metaInformation::delete($key);
         HostCommunication::triggerAll(Trigger::$allTriggers['CACHE_KEY_HAS_UPDATED'], $key);
         DBLocker::release($key);
 
@@ -97,7 +97,7 @@ class CacheManager
         $value = serialize($value);
         $valueLength = strlen($value);
 
-        $metaInformation = self::$metaInformation->getMeta($key);
+        $metaInformation = self::$metaInformation->get($key);
         if(!$metaInformation) {
             $memoryKey = self::$memoryDriver->createMemoryBlock($key, $valueLength);
             $metaInformation = [
@@ -108,11 +108,11 @@ class CacheManager
         $metaInformation['is_being_written'] = true;
         $metaInformation['length'] = $valueLength;
         $metaInformation['updated_at'] = self::getNowFromDB();
-        self::$metaInformation->putMeta($key, $metaInformation);
+        self::$metaInformation->put($key, $metaInformation);
 
         self::$memoryDriver->put($metaInformation['memory_key'], $value);
 
         $metaInformation['is_being_written'] = false;
-        self::$metaInformation->putMeta($key, $metaInformation);
+        self::$metaInformation->put($key, $metaInformation);
     }
 }

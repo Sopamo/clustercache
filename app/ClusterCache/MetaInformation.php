@@ -19,7 +19,7 @@ class MetaInformation
      * @param string $key
      * @return array{memory_key: string, length: int, is_locked: bool, is_being_written: bool, updated_at: int}
      */
-    public static function getMeta(string $key): array
+    public static function get(string $key): array
     {
         return unserialize(self::$memoryDriver->get(self::RESERVED_KEY))[$key];
     }
@@ -29,7 +29,7 @@ class MetaInformation
      * @param array{memory_key: string, length: int, is_locked: bool, is_being_written: bool, updated_at: int} $value
      * @return array
      */
-    public static function putMeta(string $key, array $value): array {
+    public static function put(string $key, array $value): array {
         $data = self::$memoryDriver->get(self::RESERVED_KEY);
         $data[$key] = $value;
         self::$memoryDriver->put(self::RESERVED_KEY, serialize($data));
@@ -37,7 +37,7 @@ class MetaInformation
         return $data[$key];
     }
 
-    public static function deleteMeta(string $key): void {
+    public static function delete(string $key): void {
         $data = self::$memoryDriver->get(self::RESERVED_KEY);
         unset($data[$key]);
         self::$memoryDriver->put(self::RESERVED_KEY, serialize($data));
