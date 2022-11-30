@@ -5,7 +5,7 @@ namespace App\ClusterCache;
 use App\ClusterCache\Drivers\MemoryDriverInterface;
 use App\ClusterCache\Exceptions\NotFoundLocalCacheKeyException;
 use App\ClusterCache\HostCommunication\HostCommunication;
-use App\ClusterCache\HostCommunication\Trigger;
+use App\ClusterCache\HostCommunication\Event;
 use App\ClusterCache\Lockers\DBLocker;
 use App\ClusterCache\Lockers\EventLocker;
 use App\ClusterCache\Models\CacheEntry;
@@ -31,9 +31,9 @@ class CacheManager
         }
 
         DBLocker::acquire($key);
-        HostCommunication::triggerAll(Trigger::$allTriggers['CACHE_KEY_IS_UPDATING'], $key);
+        HostCommunication::triggerAll(Event::$allEvents['CACHE_KEY_IS_UPDATING'], $key);
         // TO DO: Implement putting into DB
-        HostCommunication::triggerAll(Trigger::$allTriggers['CACHE_KEY_HAS_UPDATED'], $key);
+        HostCommunication::triggerAll(Event::$allEvents['CACHE_KEY_HAS_UPDATED'], $key);
         self::putIntoLocalCache($key, $value);
         DBLocker::release($key);
 
@@ -77,11 +77,11 @@ class CacheManager
         }
 
         DBLocker::acquire($key);
-        HostCommunication::triggerAll(Trigger::$allTriggers['CACHE_KEY_IS_UPDATING'], $key);
+        HostCommunication::triggerAll(Event::$allEvents['CACHE_KEY_IS_UPDATING'], $key);
         CacheEntry::where('key', $key)->delete();
         self::$memoryDriver->delete(self::$metaInformation->get($key)['memory_key']);
         self::$metaInformation::delete($key);
-        HostCommunication::triggerAll(Trigger::$allTriggers['CACHE_KEY_HAS_UPDATED'], $key);
+        HostCommunication::triggerAll(Event::$allEvents['CACHE_KEY_HAS_UPDATED'], $key);
         DBLocker::release($key);
 
         return true;
