@@ -8,7 +8,7 @@ class Event
         'CACHE_KEY_IS_UPDATING' => 'cache key is updating',
         'CACHE_KEY_HAS_UPDATED' => 'cache key has updated',
         'TEST_CONNECTION' => 'test connection',
-        'fetch_hosts' => 'fetch hosts',
+        'FETCH_HOSTS' => 'fetch hosts',
     ];
 
     public string $value;
