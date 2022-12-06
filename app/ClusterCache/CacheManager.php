@@ -14,13 +14,11 @@ use Illuminate\Support\Carbon;
 class CacheManager
 {
     private static MemoryDriverInterface $memoryDriver;
-    private static MetaInformation $metaInformation;
 
     public static function init(MemoryDriver $memoryDriver):void
     {
         self::$memoryDriver = $memoryDriver->driver;
-        self::$metaInformation = new MetaInformation();
-        self::$metaInformation::init(self::$memoryDriver);
+        MetaInformation::init(self::$memoryDriver);
     }
 
     public static function put(string $key, mixed $value, int $ttl = 0):bool {
@@ -51,7 +49,7 @@ class CacheManager
             return false;
         }
 
-        $metaInformation = self::$metaInformation->get($key);
+        $metaInformation = MetaInformation::get($key);
         try{
             // TO DO wait if is_being_written is true
             $expiredAt = $metaInformation['updated_at'] + $metaInformation['ttl'] * 1000;
@@ -65,6 +63,7 @@ class CacheManager
             $cacheEntry = CacheEntry::where('key', $key)->first();
 
             if(!$cacheEntry) {
+                MetaInformation::delete($key);
                 return $default;
             }
 
@@ -90,8 +89,8 @@ class CacheManager
         DBLocker::acquire($key);
         HostCommunication::triggerAll(Event::$allEvents['CACHE_KEY_IS_UPDATING'], $key);
         CacheEntry::where('key', $key)->delete();
-        self::$memoryDriver->delete(self::$metaInformation->get($key)['memory_key']);
-        self::$metaInformation::delete($key);
+        self::$memoryDriver->delete(MetaInformation::get($key)['memory_key']);
+        MetaInformation::delete($key);
         HostCommunication::triggerAll(Event::$allEvents['CACHE_KEY_HAS_UPDATED'], $key);
         DBLocker::release($key);
 
@@ -108,7 +107,7 @@ class CacheManager
         $value = serialize($cacheEntry->value);
         $valueLength = strlen($value);
 
-        $metaInformation = self::$metaInformation->get($cacheEntry->key);
+        $metaInformation = MetaInformation::get($cacheEntry->key);
         if(!$metaInformation) {
             $memoryKey = self::$memoryDriver->createMemoryBlock($cacheEntry->key, $valueLength);
             $metaInformation = [
@@ -120,11 +119,11 @@ class CacheManager
         $metaInformation['length'] = $valueLength;
         $metaInformation['updated_at'] = $cacheEntry->updated_at + Carbon::now()->timestamp - self::getNowFromDB();
         $metaInformation['ttl'] = $ttl;
-        self::$metaInformation->put($cacheEntry->key, $metaInformation);
+        MetaInformation::put($cacheEntry->key, $metaInformation);
 
         self::$memoryDriver->put($metaInformation['memory_key'], $value);
 
         $metaInformation['is_being_written'] = false;
-        self::$metaInformation->put($cacheEntry->key, $metaInformation);
+        MetaInformation::put($cacheEntry->key, $metaInformation);
     }
 }
