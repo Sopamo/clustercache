@@ -43,10 +43,10 @@ class CacheManager
 
     /**
      * @param string $key
+     * @param mixed|null $default
      * @return mixed
-     *@throws NotFoundLocalCacheKeyException
      */
-    public static function get(string $key):mixed {
+    public static function get(string $key, mixed $default = null):mixed {
         if(EventLocker::isLocked($key)) {
             return false;
         }
@@ -63,6 +63,11 @@ class CacheManager
             $cachedValue = unserialize($cachedValue);
         } catch (NotFoundLocalCacheKeyException) {
             $cacheEntry = CacheEntry::where('key', $key)->first();
+
+            if(!$cacheEntry) {
+                return $default;
+            }
+
             self::putIntoLocalCache($cacheEntry, $metaInformation['ttl']);
             $cachedValue = $cacheEntry->value;
         }
