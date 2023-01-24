@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class CacheEntry extends Model
 {
+    protected $guarded = [];
+
     protected function value(): Attribute
     {
         return Attribute::make(

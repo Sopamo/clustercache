@@ -6,6 +6,7 @@ use App\ClusterCache\Drivers\MemoryDriverInterface;
 
 class ShmopDriver implements MemoryDriverInterface
 {
+    const METADATA_LENGTH = 40;
 
     public static function put(string $memoryKey, mixed $value): bool
     {
@@ -22,8 +23,12 @@ class ShmopDriver implements MemoryDriverInterface
         // TODO: Implement delete() method.
     }
 
-    public static function createMemoryBlock(string $memoryKey, int $length): int
+    public static function createOrOpenMemoryBlock(string $memoryKey, int $length, ShmopConnectionMode $mode): \Shmop
     {
-        // TODO: Implement createMemoryBlock() method.
+        return shmop_open($memoryKey, $mode->value, 0644, $length);
+    }
+
+    private static function decimalToBinary(int $number, int $bits = 40): string {
+        return sprintf("%0" . $bits . "b", $number);
     }
 }

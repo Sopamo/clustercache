@@ -10,6 +10,7 @@ use App\ClusterCache\LockingMechanisms\DBLocker;
 use App\ClusterCache\LockingMechanisms\EventLocker;
 use App\ClusterCache\Models\CacheEntry;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class CacheManager
 {
@@ -25,14 +26,20 @@ class CacheManager
         if(EventLocker::isLocked($key)) {
             return false;
         }
-        if(DBLocker::isLocked($key, self::getNowFromDB())) {
+        if(DBLocker::isLocked($key)) {
             return false;
         }
 
         DBLocker::acquire($key);
-        HostCommunication::triggerAll(Event::$allEvents['CACHE_KEY_IS_UPDATING'], $key);
-        // TO DO: Implement putting into DB
-        HostCommunication::triggerAll(Event::$allEvents['CACHE_KEY_HAS_UPDATED'], $key);
+        HostCommunication::triggerAll(Event::fromString(Event::$allEvents['CACHE_KEY_IS_UPDATING']), $key);
+        $cacheEntry = CacheEntry::updateOrCreate(
+            ['key' => $key],
+            [
+                'value' => $value,
+                'ttl' => $ttl,
+            ]
+        );
+        HostCommunication::triggerAll(Event::fromString(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
         self::putIntoLocalCache($cacheEntry, $ttl);
         DBLocker::release($key);
 
@@ -82,7 +89,7 @@ class CacheManager
         if(EventLocker::isLocked($key)) {
             return false;
         }
-        if(DBLocker::isLocked($key, self::getNowFromDB())) {
+        if(DBLocker::isLocked($key)) {
             return false;
         }
 
@@ -97,11 +104,6 @@ class CacheManager
         return true;
     }
 
-    private static function getNowFromDB():int {
-        // TO DO
-        return 777;
-    }
-
     private static function putIntoLocalCache(CacheEntry $cacheEntry, int $ttl): void
     {
         $value = serialize($cacheEntry->value);
@@ -109,7 +111,7 @@ class CacheManager
 
         $metaInformation = MetaInformation::get($cacheEntry->key);
         if(!$metaInformation) {
-            $memoryKey = self::$memoryDriver->createMemoryBlock($cacheEntry->key, $valueLength);
+            $memoryKey = self::$memoryDriver->createOrOpenMemoryBlock($cacheEntry->key, $valueLength);
             $metaInformation = [
                 'memory_key' => $memoryKey,
                 'is_locked' => false,
