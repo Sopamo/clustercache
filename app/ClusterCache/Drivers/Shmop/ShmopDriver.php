@@ -3,19 +3,39 @@
 namespace App\ClusterCache\Drivers\Shmop;
 
 use App\ClusterCache\Drivers\MemoryDriverInterface;
+use App\ClusterCache\Exceptions\MemoryBlockDoesntExistException;
 
 class ShmopDriver implements MemoryDriverInterface
 {
-    const METADATA_LENGTH = 40;
+    const METADATA_LENGTH_IN_BYTES = 8;
 
-    public static function put(string $memoryKey, mixed $value): bool
+    public static function put(string $memoryKey, mixed $value, int $length): bool
     {
-        // TODO: Implement put() method.
+        try {
+            $shmop = self::openOrCreateMemoryBlock($memoryKey, $length, ShmopConnectionMode::Create);
+            $dataLength = strlen($value);
+            logger('dataLength: ' . $dataLength);
+            //$dataLengthInBinary = self::decimalToBinary($dataLength, self::METADATA_LENGTH_IN_BYTES * 8);
+            //logger('$dataLengthInBinary: ' . $dataLengthInBinary);
+            $dataToSave = pack('J', $dataLength) . $value;
+            logger('$dataToSave: ' . $dataToSave);
+            shmop_write($shmop, $dataToSave, 0);
+
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
-
-    public static function get(string $memoryKey): mixed
+    public static function get(string $memoryKey, int $length): mixed
     {
-        // TODO: Implement get() method.
+        try{
+            $shmop = self::openOrCreateMemoryBlock($memoryKey,  $length, ShmopConnectionMode::ReadOnly);
+            $dataLength = unpack('J', shmop_read($shmop, 0, self::METADATA_LENGTH_IN_BYTES))[1];
+            logger('$dataLength in GET: ' . $dataLength);
+            return shmop_read($shmop, self::METADATA_LENGTH_IN_BYTES, $dataLength);
+        } catch (MemoryBlockDoesntExistException $e) {
+            return null;
+        }
     }
 
     public static function delete(string $memoryKey): bool
@@ -23,12 +43,23 @@ class ShmopDriver implements MemoryDriverInterface
         // TODO: Implement delete() method.
     }
 
-    public static function createOrOpenMemoryBlock(string $memoryKey, int $length, ShmopConnectionMode $mode): \Shmop
+    /**
+     * @throws MemoryBlockDoesntExistException
+     */
+    private static function openOrCreateMemoryBlock(int $memoryKey, int $length, ShmopConnectionMode $mode): \Shmop
     {
-        return shmop_open($memoryKey, $mode->value, 0644, $length);
+        $shmop = shmop_open($memoryKey, $mode->value, 0644, $length);
+        if(!$shmop) {
+            throw new MemoryBlockDoesntExistException('the memory block "' . $memoryKey . '" doesn\'t exist');
+        }
+        return $shmop;
     }
 
-    private static function decimalToBinary(int $number, int $bits = 40): string {
-        return sprintf("%0" . $bits . "b", $number);
+    public static function generateMemoryKey():int {
+        return intval(uniqid('', true), 16);
     }
+
+/*    private static function decimalToBinary(int $number, int $bits = 32): string {
+        return sprintf("%0" . $bits . "b", $number);
+    }*/
 }

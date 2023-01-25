@@ -111,7 +111,7 @@ class CacheManager
 
         $metaInformation = MetaInformation::get($cacheEntry->key);
         if(!$metaInformation) {
-            $memoryKey = self::$memoryDriver->createOrOpenMemoryBlock($cacheEntry->key, $valueLength);
+            $memoryKey = self::$memoryDriver->generateMemoryKey();
             $metaInformation = [
                 'memory_key' => $memoryKey,
                 'is_locked' => false,
