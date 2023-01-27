@@ -39,7 +39,7 @@ class DBLocker
         return true;
     }
 
-    private static function getNowFromDB():string {
+    public static function getNowFromDB():string {
         return DB::select(DB::raw('SELECT NOW() as now'))[0]->now;
     }
 }

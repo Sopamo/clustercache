@@ -10,7 +10,6 @@ use App\ClusterCache\LockingMechanisms\DBLocker;
 use App\ClusterCache\LockingMechanisms\EventLocker;
 use App\ClusterCache\Models\CacheEntry;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class CacheManager
 {
@@ -60,11 +59,13 @@ class CacheManager
         try{
             // TO DO wait if is_being_written is true
             $expiredAt = $metaInformation['updated_at'] + $metaInformation['ttl'] * 1000;
-            if(Carbon::now()->timestamp > $expiredAt) {
+            if($metaInformation['ttl'] && Carbon::now()->timestamp > $expiredAt) {
                 self::delete($key);
                 return null;
             }
-            $cachedValue = self::$memoryDriver->get($metaInformation['memory_key']);
+            $cachedValue = self::$memoryDriver->get($metaInformation['memory_key'], $metaInformation['length']);
+            logger('$cachedValue');
+            logger($cachedValue);
             $cachedValue = unserialize($cachedValue);
         } catch (NotFoundLocalCacheKeyException) {
             $cacheEntry = CacheEntry::where('key', $key)->first();
@@ -119,11 +120,12 @@ class CacheManager
         }
         $metaInformation['is_being_written'] = true;
         $metaInformation['length'] = $valueLength;
-        $metaInformation['updated_at'] = $cacheEntry->updated_at + Carbon::now()->timestamp - self::getNowFromDB();
+        $nowFromDB = Carbon::createFromFormat('Y-m-d H:i:s',  DBLocker::getNowFromDB());
+        $metaInformation['updated_at'] = $cacheEntry->updated_at->timestamp + Carbon::now()->timestamp - $nowFromDB->timestamp;
         $metaInformation['ttl'] = $ttl;
         MetaInformation::put($cacheEntry->key, $metaInformation);
 
-        self::$memoryDriver->put($metaInformation['memory_key'], $value);
+        self::$memoryDriver->put($metaInformation['memory_key'], $value, $metaInformation['length']);
 
         $metaInformation['is_being_written'] = false;
         MetaInformation::put($cacheEntry->key, $metaInformation);

@@ -1,0 +1,25 @@
+$memoryKey = ShmopDriver::generateMemoryKey();
+ShmopDriver::put($memoryKey, 'test', 4 + ShmopDriver::METADATA_LENGTH_IN_BYTES);
+ShmopDriver::get($memoryKey, 4 + ShmopDriver::METADATA_LENGTH_IN_BYTES);
+ShmopDriver::delete($memoryKey, 4 + ShmopDriver::METADATA_LENGTH_IN_BYTES);
+ShmopDriver::get($memoryKey, 4 + ShmopDriver::METADATA_LENGTH_IN_BYTES);
+
+$shmopDriver = new ShmopDriver();
+MetaInformation::init($shmopDriver);
+MetaInformation::get('key');
+MetaInformation::put('key', ['value']);
+MetaInformation::get('key');
+MetaInformation::delete('key');
+MetaInformation::get('key');
+
+$cacheEntry = CacheEntry::first();
+$nowFromDB = Illuminate\Support\Carbon::createFromFormat('Y-m-d H:i:s',  DBLocker::getNowFromDB()); 
+$difference = Illuminate\Support\Carbon::now()->timestamp - $nowFromDB->timestamp;
+$updatedAt = $cacheEntry->updated_at->timestamp + Illuminate\Support\Carbon::now()->timestamp - $nowFromDB->timestamp;
+
+
+$driver = MemoryDriver::fromString('SHMOP');
+CacheManager::init($driver);
+CacheManager::put('cache key', 'value');
+CacheManager::get('cache key');
+MetaInformation::get('cache key');
