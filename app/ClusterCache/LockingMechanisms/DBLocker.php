@@ -26,14 +26,11 @@ class DBLocker
     }
     public static function isLocked(string $key, int $retryIntervalMilliseconds = 200, int $attemptLimit = 3): bool {
         $retryIntervalMicroseconds = $retryIntervalMilliseconds * 1000;
-
         for($i = 0; $i < $attemptLimit; $i++) {
             $isLocked = CacheEntry::where('key', $key)->whereNotNull('locked_at')->exists();
-
             if(!$isLocked) {
                 return false;
             }
-
             usleep($retryIntervalMicroseconds);
         }
         return true;

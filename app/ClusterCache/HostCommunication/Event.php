@@ -7,6 +7,7 @@ class Event
     public static array $allEvents = [
         'CACHE_KEY_IS_UPDATING' => 'cache key is updating',
         'CACHE_KEY_HAS_UPDATED' => 'cache key has updated',
+        'CACHE_KEY_UPDATING_HAS_CANCELED' => 'cache key updating has canceled',
         'TEST_CONNECTION' => 'test connection',
         'FETCH_HOSTS' => 'fetch hosts',
     ];

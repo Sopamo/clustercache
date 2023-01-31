@@ -14,9 +14,7 @@ class ShmopDriver implements MemoryDriverInterface
         try {
             $shmop = self::openOrCreateMemoryBlock($memoryKey, $length + self::METADATA_LENGTH_IN_BYTES, ShmopConnectionMode::Create);
             $dataLength = strlen($value);
-            logger('dataLength: ' . $dataLength);
             $dataToSave = pack('J', $dataLength) . $value;
-            logger('$dataToSave: ' . $dataToSave);
             shmop_write($shmop, $dataToSave, 0);
 
             return true;
@@ -24,12 +22,12 @@ class ShmopDriver implements MemoryDriverInterface
             return false;
         }
     }
+
     public static function get(string $memoryKey, int $length): mixed
     {
         try{
             $shmop = self::openOrCreateMemoryBlock($memoryKey,  $length + self::METADATA_LENGTH_IN_BYTES, ShmopConnectionMode::ReadOnly);
             $dataLength = unpack('J', shmop_read($shmop, 0, self::METADATA_LENGTH_IN_BYTES))[1];
-            logger('$dataLength in GET: ' . $dataLength);
             return shmop_read($shmop, self::METADATA_LENGTH_IN_BYTES, $dataLength);
         } catch (MemoryBlockDoesntExistException $e) {
             return null;
