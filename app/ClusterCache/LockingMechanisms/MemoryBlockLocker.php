@@ -10,7 +10,7 @@ class MemoryBlockLocker
         $retryIntervalMicroseconds = $retryIntervalMilliseconds * 1000;
         for($i = 0; $i < $attemptLimit; $i++) {
             $metaInformation = MetaInformation::get($key);
-            if(!$metaInformation['is_being_written']) {
+            if(!$metaInformation || !$metaInformation['is_being_written']) {
                 return false;
             }
             usleep($retryIntervalMicroseconds);
