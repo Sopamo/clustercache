@@ -3,11 +3,13 @@
 namespace App\ClusterCache;
 
 use App\ClusterCache\Drivers\MemoryDriverInterface;
+use App\ClusterCache\Exceptions\CacheEntryValueIsOutOfMemoryException;
 use App\ClusterCache\Exceptions\NotFoundLocalCacheKeyException;
 use App\ClusterCache\HostCommunication\HostCommunication;
 use App\ClusterCache\HostCommunication\Event;
 use App\ClusterCache\LockingMechanisms\DBLocker;
 use App\ClusterCache\LockingMechanisms\EventLocker;
+use App\ClusterCache\LockingMechanisms\MemoryBlockLocker;
 use App\ClusterCache\Models\CacheEntry;
 use Illuminate\Support\Carbon;
 
@@ -25,18 +27,31 @@ class CacheManager
         if(EventLocker::isLocked($key)) {
             return false;
         }
-        if(DBLocker::isLocked($key, self::getNowFromDB())) {
+        if(DBLocker::isLocked($key)) {
             return false;
         }
 
         DBLocker::acquire($key);
-        HostCommunication::triggerAll(Event::$allEvents['CACHE_KEY_IS_UPDATING'], $key);
-        // TO DO: Implement putting into DB
-        HostCommunication::triggerAll(Event::$allEvents['CACHE_KEY_HAS_UPDATED'], $key);
-        self::putIntoLocalCache($cacheEntry, $ttl);
-        DBLocker::release($key);
+        HostCommunication::triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_IS_UPDATING']), $key);
+        try{
+            $cacheEntry = CacheEntry::updateOrCreate(
+                ['key' => $key],
+                [
+                    'value' => $value,
+                    'ttl' => $ttl,
+                ]
+            );
+            HostCommunication::triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
+            self::putIntoLocalCache($cacheEntry);
+            DBLocker::release($key);
 
-        return true;
+            return true;
+        } catch (CacheEntryValueIsOutOfMemoryException $e) {
+            HostCommunication::triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_UPDATING_HAS_CANCELED']), $key);
+            DBLocker::release($key);
+
+            return false;
+        }
     }
 
     /**
@@ -46,18 +61,28 @@ class CacheManager
      */
     public static function get(string $key, mixed $default = null):mixed {
         if(EventLocker::isLocked($key)) {
-            return false;
+            return $default;
         }
 
-        $metaInformation = MetaInformation::get($key);
         try{
-            // TO DO wait if is_being_written is true
-            $expiredAt = $metaInformation['updated_at'] + $metaInformation['ttl'] * 1000;
-            if(Carbon::now()->timestamp > $expiredAt) {
-                self::delete($key);
-                return null;
+            $metaInformation = MetaInformation::get($key);
+            if(!$metaInformation) {
+                throw new NotFoundLocalCacheKeyException();
             }
-            $cachedValue = self::$memoryDriver->get($metaInformation['memory_key']);
+            if(MemoryBlockLocker::isLocked($key)) {
+                return $default;
+            }
+
+            $expiredAt = $metaInformation['updated_at'] + $metaInformation['ttl'];
+            if($metaInformation['ttl'] && Carbon::now()->timestamp > $expiredAt) {
+                self::delete($key);
+                return $default;
+            }
+
+            $cachedValue = self::$memoryDriver->get($metaInformation['memory_key'], $metaInformation['length']);
+            if(!$cachedValue) {
+                throw new NotFoundLocalCacheKeyException();
+            }
             $cachedValue = unserialize($cachedValue);
         } catch (NotFoundLocalCacheKeyException) {
             $cacheEntry = CacheEntry::where('key', $key)->first();
@@ -67,7 +92,7 @@ class CacheManager
                 return $default;
             }
 
-            self::putIntoLocalCache($cacheEntry, $metaInformation['ttl']);
+            self::putIntoLocalCache($cacheEntry);
             $cachedValue = $cacheEntry->value;
         }
         return $cachedValue;
@@ -82,46 +107,53 @@ class CacheManager
         if(EventLocker::isLocked($key)) {
             return false;
         }
-        if(DBLocker::isLocked($key, self::getNowFromDB())) {
+        if(DBLocker::isLocked($key)) {
             return false;
         }
 
         DBLocker::acquire($key);
-        HostCommunication::triggerAll(Event::$allEvents['CACHE_KEY_IS_UPDATING'], $key);
+        HostCommunication::triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_IS_UPDATING']), $key);
         CacheEntry::where('key', $key)->delete();
-        self::$memoryDriver->delete(MetaInformation::get($key)['memory_key']);
+        $metaInformation = MetaInformation::get($key);
+        if($metaInformation) {
+            self::$memoryDriver->delete($metaInformation['memory_key'], $metaInformation['length']);
+        }
         MetaInformation::delete($key);
-        HostCommunication::triggerAll(Event::$allEvents['CACHE_KEY_HAS_UPDATED'], $key);
+        HostCommunication::triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
         DBLocker::release($key);
 
         return true;
     }
 
-    private static function getNowFromDB():int {
-        // TO DO
-        return 777;
-    }
-
-    private static function putIntoLocalCache(CacheEntry $cacheEntry, int $ttl): void
+    private static function putIntoLocalCache(CacheEntry $cacheEntry): void
     {
         $value = serialize($cacheEntry->value);
         $valueLength = strlen($value);
 
         $metaInformation = MetaInformation::get($cacheEntry->key);
         if(!$metaInformation) {
-            $memoryKey = self::$memoryDriver->createMemoryBlock($cacheEntry->key, $valueLength);
+            $memoryKey = self::$memoryDriver->generateMemoryKey();
             $metaInformation = [
                 'memory_key' => $memoryKey,
                 'is_locked' => false,
+                'length' => $valueLength,
             ];
         }
         $metaInformation['is_being_written'] = true;
-        $metaInformation['length'] = $valueLength;
-        $metaInformation['updated_at'] = $cacheEntry->updated_at + Carbon::now()->timestamp - self::getNowFromDB();
-        $metaInformation['ttl'] = $ttl;
+
+        if($valueLength > $metaInformation['length']) {
+            // if the new length is greater than the old length,
+            // the memory block has to be deleted and created again
+            self::$memoryDriver->delete($metaInformation['memory_key'], $metaInformation['length']);
+            $metaInformation['length'] = $valueLength;
+        }
+
+        $nowFromDB = Carbon::createFromFormat('Y-m-d H:i:s',  DBLocker::getNowFromDB());
+        $metaInformation['updated_at'] = $cacheEntry->updated_at->timestamp + Carbon::now()->timestamp - $nowFromDB->timestamp;
+        $metaInformation['ttl'] = $cacheEntry->ttl;
         MetaInformation::put($cacheEntry->key, $metaInformation);
 
-        self::$memoryDriver->put($metaInformation['memory_key'], $value);
+        self::$memoryDriver->put($metaInformation['memory_key'], $value, $metaInformation['length']);
 
         $metaInformation['is_being_written'] = false;
         MetaInformation::put($cacheEntry->key, $metaInformation);
