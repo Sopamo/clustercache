@@ -32,7 +32,7 @@ class CacheManager
         }
 
         DBLocker::acquire($key);
-        HostCommunication::triggerAll(Event::fromString(Event::$allEvents['CACHE_KEY_IS_UPDATING']), $key);
+        HostCommunication::triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_IS_UPDATING']), $key);
         try{
             $cacheEntry = CacheEntry::updateOrCreate(
                 ['key' => $key],
@@ -41,13 +41,13 @@ class CacheManager
                     'ttl' => $ttl,
                 ]
             );
-            HostCommunication::triggerAll(Event::fromString(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
+            HostCommunication::triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
             self::putIntoLocalCache($cacheEntry);
             DBLocker::release($key);
 
             return true;
         } catch (CacheEntryValueIsOutOfMemoryException $e) {
-            HostCommunication::triggerAll(Event::fromString(Event::$allEvents['CACHE_KEY_UPDATING_HAS_CANCELED']), $key);
+            HostCommunication::triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_UPDATING_HAS_CANCELED']), $key);
             DBLocker::release($key);
 
             return false;
@@ -112,14 +112,14 @@ class CacheManager
         }
 
         DBLocker::acquire($key);
-        HostCommunication::triggerAll(Event::fromString(Event::$allEvents['CACHE_KEY_IS_UPDATING']), $key);
+        HostCommunication::triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_IS_UPDATING']), $key);
         CacheEntry::where('key', $key)->delete();
         $metaInformation = MetaInformation::get($key);
         if($metaInformation) {
             self::$memoryDriver->delete($metaInformation['memory_key'], $metaInformation['length']);
         }
         MetaInformation::delete($key);
-        HostCommunication::triggerAll(Event::fromString(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
+        HostCommunication::triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
         DBLocker::release($key);
 
         return true;

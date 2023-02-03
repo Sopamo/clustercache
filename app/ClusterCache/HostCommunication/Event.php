@@ -5,11 +5,11 @@ namespace App\ClusterCache\HostCommunication;
 class Event
 {
     public static array $allEvents = [
-        'CACHE_KEY_IS_UPDATING' => 'cache key is updating',
-        'CACHE_KEY_HAS_UPDATED' => 'cache key has updated',
-        'CACHE_KEY_UPDATING_HAS_CANCELED' => 'cache key updating has canceled',
-        'TEST_CONNECTION' => 'test connection',
-        'FETCH_HOSTS' => 'fetch hosts',
+        'CACHE_KEY_IS_UPDATING' => 1,
+        'CACHE_KEY_HAS_UPDATED' => 2,
+        'CACHE_KEY_UPDATING_HAS_CANCELED' => 3,
+        'TEST_CONNECTION' => 4,
+        'FETCH_HOSTS' => 5,
     ];
 
     public string $value;
@@ -22,7 +22,7 @@ class Event
         $this->value = $event;
     }
 
-    public static function fromString(string $event):self
+    public static function fromInt(int $event):self
     {
         return new self($event);
     }
