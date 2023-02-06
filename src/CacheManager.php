@@ -15,15 +15,17 @@ use Illuminate\Support\Carbon;
 
 class CacheManager
 {
-    private static MemoryDriverInterface $memoryDriver;
+    private MemoryDriverInterface $memoryDriver;
+    private MetaInformation $metaInformation;
 
-    public static function init(MemoryDriver $memoryDriver):void
+
+    public function __constuctor(MemoryDriver $memoryDriver):void
     {
-        self::$memoryDriver = $memoryDriver->driver;
-        MetaInformation::init(self::$memoryDriver);
+        $this->metaInformation = app(MetaInformation::class, ['memoryDriver' => $memoryDriver]);
+        $this->memoryDriver = $memoryDriver->driver;
     }
 
-    public static function put(string $key, mixed $value, int $ttl = 0):bool {
+    public function put(string $key, mixed $value, int $ttl = 0):bool {
         if(EventLocker::isLocked($key)) {
             return false;
         }
@@ -59,13 +61,13 @@ class CacheManager
      * @param mixed|null $default
      * @return mixed
      */
-    public static function get(string $key, mixed $default = null):mixed {
+    public function get(string $key, mixed $default = null):mixed {
         if(EventLocker::isLocked($key)) {
             return $default;
         }
 
         try{
-            $metaInformation = MetaInformation::get($key);
+            $metaInformation = $this->metaInformation->get($key);
             if(!$metaInformation) {
                 throw new NotFoundLocalCacheKeyException();
             }
@@ -88,7 +90,8 @@ class CacheManager
             $cacheEntry = CacheEntry::where('key', $key)->first();
 
             if(!$cacheEntry) {
-                MetaInformation::delete($key);
+                $this->metaInformation->
+delete($key);
                 return $default;
             }
 
@@ -103,7 +106,7 @@ class CacheManager
      * @return bool
      *@throws NotFoundLocalCacheKeyException
      */
-    public static function delete(string $key):bool {
+    public function delete(string $key):bool {
         if(EventLocker::isLocked($key)) {
             return false;
         }
@@ -114,23 +117,26 @@ class CacheManager
         DBLocker::acquire($key);
         HostCommunication::triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_IS_UPDATING']), $key);
         CacheEntry::where('key', $key)->delete();
-        $metaInformation = MetaInformation::get($key);
+        $metaInformation = $this->metaInformation->
+get($key);
         if($metaInformation) {
             self::$memoryDriver->delete($metaInformation['memory_key'], $metaInformation['length']);
         }
-        MetaInformation::delete($key);
+        $this->metaInformation->
+delete($key);
         HostCommunication::triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
         DBLocker::release($key);
 
         return true;
     }
 
-    private static function putIntoLocalCache(CacheEntry $cacheEntry): void
+    private function putIntoLocalCache(CacheEntry $cacheEntry): void
     {
         $value = serialize($cacheEntry->value);
         $valueLength = strlen($value);
 
-        $metaInformation = MetaInformation::get($cacheEntry->key);
+        $metaInformation = $this->metaInformation->
+get($cacheEntry->key);
         if(!$metaInformation) {
             $memoryKey = self::$memoryDriver->generateMemoryKey();
             $metaInformation = [
@@ -151,11 +157,11 @@ class CacheManager
         $nowFromDB = Carbon::createFromFormat('Y-m-d H:i:s',  DBLocker::getNowFromDB());
         $metaInformation['updated_at'] = $cacheEntry->updated_at->timestamp + Carbon::now()->timestamp - $nowFromDB->timestamp;
         $metaInformation['ttl'] = $cacheEntry->ttl;
-        MetaInformation::put($cacheEntry->key, $metaInformation);
+        $this->metaInformation->put($cacheEntry->key, $metaInformation);
 
         self::$memoryDriver->put($metaInformation['memory_key'], $value, $metaInformation['length']);
 
         $metaInformation['is_being_written'] = false;
-        MetaInformation::put($cacheEntry->key, $metaInformation);
+        $this->metaInformation->put($cacheEntry->key, $metaInformation);
     }
 }
