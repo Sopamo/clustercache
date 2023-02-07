@@ -18,11 +18,17 @@
         "ext-shmop": "*"
     },
     "require-dev": {
-        "orchestra/testbench": "^7.0"
+        "orchestra/testbench": "^7.0",
+        "phpunit/phpunit": "^9.6"
     },
     "autoload": {
         "psr-4": {
             "Sopamo\\ClusterCache\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Sopamo\\ClusterCache\\Tests\\": "tests"
         }
     },
     "extra": {
