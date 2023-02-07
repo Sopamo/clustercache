@@ -2,7 +2,7 @@
     "name": "sopamo/clustercache",
     "description": "Cluster Cache",
     "type": "library",
-    "license": "??",
+    "license": "MIT",
     "authors": [
         {
             "name": "Paul Mohr",
