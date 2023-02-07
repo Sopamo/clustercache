@@ -11,10 +11,11 @@ class MetaInformation
      * 10 MB
      */
     const RESERVED_LENGTH_IN_BYTES = 10485760;
+    private static MemoryDriverInterface $memoryDriver;
 
-
-    public function __construct(private readonly MemoryDriverInterface $memoryDriver)
+    public static function setMemoryDriver(MemoryDriverInterface $memoryDriver): void
     {
+        self::$memoryDriver = $memoryDriver;
     }
 
     /**
@@ -24,7 +25,7 @@ class MetaInformation
      */
     public function get(string $key, mixed $default = null): mixed
     {
-        $data = self::getAll();
+        $data = $this->getAll();
         if(isset($data[$key])) {
             return $data[$key];
         }
@@ -37,25 +38,24 @@ class MetaInformation
      * @return array
      */
     public function put(string $key, array $value): array {
-        $data = self::getAll();
+        $data = $this->getAll();
         $data[$key] = $value;
-        $this->memoryDriver->put(self::RESERVED_KEY, serialize($data), self::RESERVED_LENGTH_IN_BYTES);
+        self::$memoryDriver->put(self::RESERVED_KEY, serialize($data), self::RESERVED_LENGTH_IN_BYTES);
 
         return $data[$key];
     }
 
     public function delete(string $key): void {
-        $data = self::getAll();
+        $data = $this->getAll();
         unset($data[$key]);
-        $this->memoryDriver->put(self::RESERVED_KEY, serialize($data), self::RESERVED_LENGTH_IN_BYTES);
+        self::$memoryDriver->put(self::RESERVED_KEY, serialize($data), self::RESERVED_LENGTH_IN_BYTES);
     }
 
     private function getAll():array {
-        $data = $this->memoryDriver->get(self::RESERVED_KEY, self::RESERVED_LENGTH_IN_BYTES);
+        $data = self::$memoryDriver->get(self::RESERVED_KEY, self::RESERVED_LENGTH_IN_BYTES);
         if(!$data) {
             return [];
         }
         return unserialize($data);
-
     }
 }

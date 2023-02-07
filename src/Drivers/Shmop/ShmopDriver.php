@@ -9,10 +9,10 @@ class ShmopDriver implements MemoryDriverInterface
 {
     const METADATA_LENGTH_IN_BYTES = 8;
 
-    public static function put(string $memoryKey, mixed $value, int $length): bool
+    public function put(string $memoryKey, mixed $value, int $length): bool
     {
         try {
-            $shmop = self::openOrCreateMemoryBlock($memoryKey, $length + self::METADATA_LENGTH_IN_BYTES, ShmopConnectionMode::Create);
+            $shmop = $this->openOrCreateMemoryBlock($memoryKey, $length + self::METADATA_LENGTH_IN_BYTES, ShmopConnectionMode::Create);
             $dataLength = strlen($value);
             $dataToSave = pack('J', $dataLength) . $value;
             shmop_write($shmop, $dataToSave, 0);
@@ -23,10 +23,10 @@ class ShmopDriver implements MemoryDriverInterface
         }
     }
 
-    public static function get(string $memoryKey, int $length): mixed
+    public function get(string $memoryKey, int $length): mixed
     {
         try{
-            $shmop = self::openOrCreateMemoryBlock($memoryKey,  $length + self::METADATA_LENGTH_IN_BYTES, ShmopConnectionMode::ReadOnly);
+            $shmop = $this->openOrCreateMemoryBlock($memoryKey,  $length + self::METADATA_LENGTH_IN_BYTES, ShmopConnectionMode::ReadOnly);
             $dataLength = unpack('J', shmop_read($shmop, 0, self::METADATA_LENGTH_IN_BYTES))[1];
             return shmop_read($shmop, self::METADATA_LENGTH_IN_BYTES, $dataLength);
         } catch (MemoryBlockDoesntExistException $e) {
@@ -34,10 +34,10 @@ class ShmopDriver implements MemoryDriverInterface
         }
     }
 
-    public static function delete(string $memoryKey, int $length): bool
+    public function delete(string $memoryKey, int $length): bool
     {
         try{
-            $shmop = self::openOrCreateMemoryBlock($memoryKey,  $length + self::METADATA_LENGTH_IN_BYTES, ShmopConnectionMode::ReadAndWite);
+            $shmop = $this->openOrCreateMemoryBlock($memoryKey,  $length + self::METADATA_LENGTH_IN_BYTES, ShmopConnectionMode::ReadAndWite);
             return shmop_delete($shmop);
         } catch (MemoryBlockDoesntExistException $e) {
             return true;
@@ -47,7 +47,7 @@ class ShmopDriver implements MemoryDriverInterface
     /**
      * @throws MemoryBlockDoesntExistException
      */
-    private static function openOrCreateMemoryBlock(int $memoryKey, int $length, ShmopConnectionMode $mode): \Shmop
+    private function openOrCreateMemoryBlock(int $memoryKey, int $length, ShmopConnectionMode $mode): \Shmop
     {
         $shmop = shmop_open($memoryKey, $mode->value, 0644, $length + self::METADATA_LENGTH_IN_BYTES);
         if(!$shmop) {
@@ -56,7 +56,7 @@ class ShmopDriver implements MemoryDriverInterface
         return $shmop;
     }
 
-    public static function generateMemoryKey():int {
+    public function generateMemoryKey():int {
         return intval(uniqid('', true), 16);
     }
 }

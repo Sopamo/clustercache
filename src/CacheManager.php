@@ -2,6 +2,8 @@
 
 namespace Sopamo\ClusterCache;
 
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Sopamo\ClusterCache\Drivers\MemoryDriverInterface;
 use Sopamo\ClusterCache\Exceptions\CacheEntryValueIsOutOfMemoryException;
 use Sopamo\ClusterCache\Exceptions\NotFoundLocalCacheKeyException;
@@ -17,24 +19,33 @@ class CacheManager
 {
     private MemoryDriverInterface $memoryDriver;
     private MetaInformation $metaInformation;
+    private EventLocker $eventLocker;
+    private DBLocker $dbLocker;
+    private MemoryBlockLocker $memoryBlockLocker;
+    private HostCommunication $hostCommunication;
 
 
-    public function __constuctor(MemoryDriver $memoryDriver):void
+    public function __construct(MemoryDriver $memoryDriver)
     {
-        $this->metaInformation = app(MetaInformation::class, ['memoryDriver' => $memoryDriver]);
+        MetaInformation::setMemoryDriver($memoryDriver->driver);
+        $this->metaInformation = app(MetaInformation::class);
         $this->memoryDriver = $memoryDriver->driver;
+        $this->eventLocker = app(EventLocker::class);
+        $this->dbLocker = app(DBLocker::class);
+        $this->memoryBlockLocker = app(MemoryBlockLocker::class);
+        $this->hostCommunication = app(HostCommunication::class);
     }
 
     public function put(string $key, mixed $value, int $ttl = 0):bool {
-        if(EventLocker::isLocked($key)) {
+        if($this->eventLocker->isLocked($key)) {
             return false;
         }
-        if(DBLocker::isLocked($key)) {
+        if($this->dbLocker->isLocked($key)) {
             return false;
         }
 
-        DBLocker::acquire($key);
-        HostCommunication::triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_IS_UPDATING']), $key);
+        $this->dbLocker->acquire($key);
+        $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_IS_UPDATING']), $key);
         try{
             $cacheEntry = CacheEntry::updateOrCreate(
                 ['key' => $key],
@@ -43,14 +54,14 @@ class CacheManager
                     'ttl' => $ttl,
                 ]
             );
-            HostCommunication::triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
-            self::putIntoLocalCache($cacheEntry);
-            DBLocker::release($key);
+            $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
+            $this->putIntoLocalCache($cacheEntry);
+            $this->dbLocker->release($key);
 
             return true;
         } catch (CacheEntryValueIsOutOfMemoryException $e) {
-            HostCommunication::triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_UPDATING_HAS_CANCELED']), $key);
-            DBLocker::release($key);
+            $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_UPDATING_HAS_CANCELED']), $key);
+            $this->dbLocker->release($key);
 
             return false;
         }
@@ -62,7 +73,7 @@ class CacheManager
      * @return mixed
      */
     public function get(string $key, mixed $default = null):mixed {
-        if(EventLocker::isLocked($key)) {
+        if($this->eventLocker->isLocked($key)) {
             return $default;
         }
 
@@ -71,17 +82,17 @@ class CacheManager
             if(!$metaInformation) {
                 throw new NotFoundLocalCacheKeyException();
             }
-            if(MemoryBlockLocker::isLocked($key)) {
+            if($this->memoryBlockLocker->isLocked($key)) {
                 return $default;
             }
 
             $expiredAt = $metaInformation['updated_at'] + $metaInformation['ttl'];
             if($metaInformation['ttl'] && Carbon::now()->timestamp > $expiredAt) {
-                self::delete($key);
+                $this->delete($key);
                 return $default;
             }
 
-            $cachedValue = self::$memoryDriver->get($metaInformation['memory_key'], $metaInformation['length']);
+            $cachedValue = $this->memoryDriver->get($metaInformation['memory_key'], $metaInformation['length']);
             if(!$cachedValue) {
                 throw new NotFoundLocalCacheKeyException();
             }
@@ -90,42 +101,39 @@ class CacheManager
             $cacheEntry = CacheEntry::where('key', $key)->first();
 
             if(!$cacheEntry) {
-                $this->metaInformation->
-delete($key);
+                $this->metaInformation->delete($key);
                 return $default;
             }
 
-            self::putIntoLocalCache($cacheEntry);
+            $this->putIntoLocalCache($cacheEntry);
             $cachedValue = $cacheEntry->value;
         }
         return $cachedValue;
     }
 
     /**
-     * @param string $key
+     * @param  string  $key
      * @return bool
-     *@throws NotFoundLocalCacheKeyException
+     * @throws NotFoundExceptionInterface
      */
     public function delete(string $key):bool {
-        if(EventLocker::isLocked($key)) {
+        if($this->eventLocker->isLocked($key)) {
             return false;
         }
-        if(DBLocker::isLocked($key)) {
+        if($this->dbLocker->isLocked($key)) {
             return false;
         }
 
-        DBLocker::acquire($key);
-        HostCommunication::triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_IS_UPDATING']), $key);
+        $this->dbLocker->acquire($key);
+        $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_IS_UPDATING']), $key);
         CacheEntry::where('key', $key)->delete();
-        $metaInformation = $this->metaInformation->
-get($key);
+        $metaInformation = $this->metaInformation->get($key);
         if($metaInformation) {
-            self::$memoryDriver->delete($metaInformation['memory_key'], $metaInformation['length']);
+            $this->memoryDriver->delete($metaInformation['memory_key'], $metaInformation['length']);
         }
-        $this->metaInformation->
-delete($key);
-        HostCommunication::triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
-        DBLocker::release($key);
+        $this->metaInformation->delete($key);
+        $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
+        $this->dbLocker->release($key);
 
         return true;
     }
@@ -135,10 +143,9 @@ delete($key);
         $value = serialize($cacheEntry->value);
         $valueLength = strlen($value);
 
-        $metaInformation = $this->metaInformation->
-get($cacheEntry->key);
+        $metaInformation = $this->metaInformation->get($cacheEntry->key);
         if(!$metaInformation) {
-            $memoryKey = self::$memoryDriver->generateMemoryKey();
+            $memoryKey = $this->memoryDriver->generateMemoryKey();
             $metaInformation = [
                 'memory_key' => $memoryKey,
                 'is_locked' => false,
@@ -150,16 +157,16 @@ get($cacheEntry->key);
         if($valueLength > $metaInformation['length']) {
             // if the new length is greater than the old length,
             // the memory block has to be deleted and created again
-            self::$memoryDriver->delete($metaInformation['memory_key'], $metaInformation['length']);
+            $this->memoryDriver->delete($metaInformation['memory_key'], $metaInformation['length']);
             $metaInformation['length'] = $valueLength;
         }
 
-        $nowFromDB = Carbon::createFromFormat('Y-m-d H:i:s',  DBLocker::getNowFromDB());
+        $nowFromDB = Carbon::createFromFormat('Y-m-d H:i:s',  $this->dbLocker->getNowFromDB());
         $metaInformation['updated_at'] = $cacheEntry->updated_at->timestamp + Carbon::now()->timestamp - $nowFromDB->timestamp;
         $metaInformation['ttl'] = $cacheEntry->ttl;
         $this->metaInformation->put($cacheEntry->key, $metaInformation);
 
-        self::$memoryDriver->put($metaInformation['memory_key'], $value, $metaInformation['length']);
+        $this->memoryDriver->put($metaInformation['memory_key'], $value, $metaInformation['length']);
 
         $metaInformation['is_being_written'] = false;
         $this->metaInformation->put($cacheEntry->key, $metaInformation);
