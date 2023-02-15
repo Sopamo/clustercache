@@ -23,7 +23,8 @@
     },
     "autoload": {
         "psr-4": {
-            "Sopamo\\ClusterCache\\": "src"
+            "Sopamo\\ClusterCache\\": "src",
+            "Sopamo\\ClusterCache\\Database\\Factories\\": "database/factories"
         }
     },
     "autoload-dev": {
@@ -37,5 +38,9 @@
                 "Sopamo\\ClusterCache\\ClusterCacheServiceProvider"
             ]
         }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "test-f": "vendor/bin/phpunit --filter"
     }
 }
