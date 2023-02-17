@@ -29,7 +29,7 @@ class ShmopDriver implements MemoryDriverInterface
             $shmop = $this->openOrCreateMemoryBlock($memoryKey,  $length + self::METADATA_LENGTH_IN_BYTES, ShmopConnectionMode::ReadOnly);
             $dataLength = unpack('J', shmop_read($shmop, 0, self::METADATA_LENGTH_IN_BYTES))[1];
             return shmop_read($shmop, self::METADATA_LENGTH_IN_BYTES, $dataLength);
-        } catch (MemoryBlockDoesntExistException $e) {
+        } catch (\Exception $e) {
             return null;
         }
     }
@@ -39,7 +39,7 @@ class ShmopDriver implements MemoryDriverInterface
         try{
             $shmop = $this->openOrCreateMemoryBlock($memoryKey,  $length + self::METADATA_LENGTH_IN_BYTES, ShmopConnectionMode::ReadAndWite);
             return shmop_delete($shmop);
-        } catch (MemoryBlockDoesntExistException $e) {
+        } catch (\Exception $e) {
             return true;
         }
     }
