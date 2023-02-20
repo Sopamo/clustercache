@@ -15,6 +15,7 @@ class DBLocker
             $cacheKey->value = '';
         }
         $cacheKey->locked_at = $this->getNowFromDB();
+        var_dump($cacheKey->locked_at);
         $cacheKey->save();
     }
     public function release(string $key): void {

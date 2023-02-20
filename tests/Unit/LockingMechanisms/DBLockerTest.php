@@ -2,6 +2,7 @@
 
 namespace Sopamo\ClusterCache\Tests\Unit\LockingMechanisms;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Sopamo\ClusterCache\LockingMechanisms\DBLocker;
 use Sopamo\ClusterCache\Models\CacheEntry;
@@ -9,6 +10,7 @@ use Sopamo\ClusterCache\Tests\TestCase;
 
 class DBLockerTest extends TestCase
 {
+    use RefreshDatabase;
     protected DBLocker $dbLocker;
     public function setUp(): void
     {
@@ -29,7 +31,6 @@ class DBLockerTest extends TestCase
      * @return void
      */
     public function it_acquires_lock_for_not_existed_cache_key() {
-        $this->markTestSkipped();
         $key = 'key';
 
         $this->assertCount(0, CacheEntry::where('key', $key)->get());
@@ -37,6 +38,7 @@ class DBLockerTest extends TestCase
         $this->dbLocker->acquire($key);
 
         $cacheEntry = CacheEntry::where('key', $key)->first();
+        var_dump($cacheEntry);
 
         $this->assertNotNull($cacheEntry->locked_at);
 
@@ -60,7 +62,6 @@ class DBLockerTest extends TestCase
         $this->dbLocker->acquire($key);
 
         $acquiredCacheEntry = CacheEntry::where('key', $key)->first();
-        var_dump($acquiredCacheEntry);
 
         $this->assertNotNull($acquiredCacheEntry->locked_at);
         $this->assertEquals($cacheEntry->id, $acquiredCacheEntry->id);
