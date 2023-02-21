@@ -16,6 +16,11 @@ class CacheEntry extends Model
      * 4GB is the limit of the length of longtext in MySQL
      */
     const VALUE_LENGTH_LIMIT = 4294967295;
+    protected $dates = [
+        'created_at',
+        'updated_at',
+        'locked_at',
+    ];
     protected $guarded = [];
 
     protected static function newFactory(): Factory

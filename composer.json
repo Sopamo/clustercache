@@ -41,6 +41,7 @@
     },
     "scripts": {
         "test": "vendor/bin/phpunit",
-        "test-f": "vendor/bin/phpunit --filter"
+        "test-f": "vendor/bin/phpunit --filter",
+        "test-df": "vendor/bin/phpunit --debug --filter"
     }
 }

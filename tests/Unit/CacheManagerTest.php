@@ -5,6 +5,7 @@ namespace Sopamo\ClusterCache\Tests\Unit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Sopamo\ClusterCache\CacheManager;
 use Sopamo\ClusterCache\Drivers\Shmop\ShmopDriver;
+use Sopamo\ClusterCache\MemoryDriver;
 use Sopamo\ClusterCache\Tests\TestCase;
 
 class CacheManagerTest extends TestCase
@@ -16,8 +17,11 @@ class CacheManagerTest extends TestCase
     {
         parent::setUp();
 
-        $shmopDriver = app(ShmopDriver::class);
+        $this->cacheManager = app(CacheManager::class, ['memoryDriver' => MemoryDriver::fromString('SHMOP')]);
+    }
 
-        $this->cacheManager = app(CacheManager::class, ['memoryDriver' => $shmopDriver]);
+    /** @test */
+    public function test() {
+        var_dump(exec('php artisan clustercache:testbackground'));
     }
 }

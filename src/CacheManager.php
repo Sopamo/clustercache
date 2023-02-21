@@ -2,7 +2,6 @@
 
 namespace Sopamo\ClusterCache;
 
-use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Sopamo\ClusterCache\Drivers\MemoryDriverInterface;
 use Sopamo\ClusterCache\Exceptions\CacheEntryValueIsOutOfMemoryException;
@@ -161,8 +160,7 @@ class CacheManager
             $metaInformation['length'] = $valueLength;
         }
 
-        $nowFromDB = Carbon::createFromFormat('Y-m-d H:i:s',  $this->dbLocker->getNowFromDB());
-        $metaInformation['updated_at'] = $cacheEntry->updated_at->timestamp + Carbon::now()->timestamp - $nowFromDB->timestamp;
+        $metaInformation['updated_at'] = $cacheEntry->updated_at->timestamp + TimeHelpers::getTimeShift();
         $metaInformation['ttl'] = $cacheEntry->ttl;
         $this->metaInformation->put($cacheEntry->key, $metaInformation);
 
