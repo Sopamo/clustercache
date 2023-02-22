@@ -1,0 +1,41 @@
+{
+    "name": "sopamo/clustercache",
+    "description": "Cluster Cache",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Paul Mohr",
+            "email": "p.mohr@sopamo.de"
+        },
+        {
+            "name": "Łukasz Socha",
+            "email": "l.socha@sopamo.de"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "ext-shmop": "*"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Sopamo\\ClusterCache\\": "src",
+            "Sopamo\\ClusterCache\\Database\\Factories\\": "database/factories"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Sopamo\\ClusterCache\\Tests\\": "tests"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Sopamo\\ClusterCache\\ClusterCacheServiceProvider"
+            ]
+        }
+    }
+}
