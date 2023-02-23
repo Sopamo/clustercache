@@ -89,4 +89,28 @@ class DBLockerTest extends TestCase
 
         $this->assertTrue($this->dbLocker->isLocked($this->cacheKey));
     }
+
+    /** @test  */
+    public function it_releases_lock() {
+        $this->assertCount(0, CacheEntry::where('key', $this->cacheKey)->get());
+
+        $this->dbLocker->acquire($this->cacheKey);
+
+        $this->assertTrue($this->dbLocker->isLocked($this->cacheKey));
+
+        $this->dbLocker->release($this->cacheKey);
+
+        $this->assertFalse($this->dbLocker->isLocked($this->cacheKey));
+
+    }
+
+    /** @test  */
+    public function it_releases_not_existed_lock() {
+        $this->assertCount(0, CacheEntry::where('key', $this->cacheKey)->get());
+
+        $this->dbLocker->release($this->cacheKey);
+
+        $this->assertFalse($this->dbLocker->isLocked($this->cacheKey));
+
+    }
 }

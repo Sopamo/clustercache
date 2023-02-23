@@ -15,29 +15,34 @@ use Sopamo\ClusterCache\Models\Host;
 class TestBackground extends Command
 {
 
-    protected $signature = 'clustercache:testbackground';
+    protected $signature = 'clustercache:testbackground {cacheKey=key} {value?}';
 
     protected $description = 'Run the background for cluster cache tests';
 
     protected CacheManager $cacheManager;
 
-    protected string $cacheKey = 'key';
-
-    protected array $value = [];
-
     public function handle(): int
     {
-        DB::setDefaultConnection('testing');
+        $cacheKey = $this->argument('cacheKey');
+        $value = $this->argument('value');
+
+        logger($cacheKey);
+
         Config::set('database.default', 'testing');
+        DB::setDefaultConnection('testing');
 
         $this->cacheManager = app(CacheManager::class, ['memoryDriver' => MemoryDriver::fromString('SHMOP')]);
 
-        $str = Str::random(90);
-        for($i = 0; $i <= 600000; $i++) {
-            $this->value[] = $str;
+        if(!$value) {
+            $value = [];
+            $str = Str::random(90);
+            for($i = 0; $i <= 600000; $i++) {
+                $value[] = $str;
+            }
         }
+        logger($value);
 
-        $this->cacheManager->put($this->cacheKey, $this->value);
+        $this->cacheManager->put($cacheKey, $value);
         return 0;
     }
 

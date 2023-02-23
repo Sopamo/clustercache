@@ -27,22 +27,27 @@ class CacheManagerTest extends TestCase
 
     /** @test */
     public function put_data() {
+        $this->cacheManager->delete($this->cacheKey);
+
         $this->assertTrue($this->cacheManager->put($this->cacheKey, $this->value));
 
-        $this->cacheManager->delete($this->cacheKey);
-    }
-
-    /** @test */
-    public function block_putting_data_while_putting_in_other_process() {
-        exec('php artisan clustercache:testbackground > /dev/null 2>&1 &');
-        usleep(500000);
-        $this->assertFalse($this->cacheManager->put($this->cacheKey, $this->value));
-
-        $this->cacheManager->delete($this->cacheKey);
     }
 
     /** @test */
     public function get_data() {
+        $this->cacheManager->delete($this->cacheKey);
+
+        $this->assertNull($this->cacheManager->get($this->cacheKey));
+
+        $this->cacheManager->put($this->cacheKey, $this->value);
+
+        $this->assertCount($this->value->count(), $this->cacheManager->get($this->cacheKey));
+    }
+
+    /** @test */
+    public function delete_data() {
+        $this->cacheManager->delete($this->cacheKey);
+
         $this->assertNull($this->cacheManager->get($this->cacheKey));
 
         $this->cacheManager->put($this->cacheKey, $this->value);
@@ -50,5 +55,33 @@ class CacheManagerTest extends TestCase
         $this->assertCount($this->value->count(), $this->cacheManager->get($this->cacheKey));
 
         $this->cacheManager->delete($this->cacheKey);
+
+        $this->assertNull($this->cacheManager->get($this->cacheKey));
+    }
+
+    /** @test */
+    public function block_putting_data_while_putting_in_other_process() {
+        $key = 'key: block_putting_data_while_putting_in_other_process';
+
+        $this->cacheManager->delete($key);
+
+        exec('php artisan clustercache:testbackground \'key: block_putting_data_while_putting_in_other_process\' > /dev/null 2>&1 &');
+        usleep(500000);
+
+        $this->assertFalse($this->cacheManager->put($key, $this->value));
+    }
+
+    /** @test */
+    public function get_data_which_was_saved_by_other_process() {
+        $key = 'key: get_data_which_was_saved_by_other_process';
+        $value = 'value';
+
+        $this->cacheManager->delete($key);
+
+        $this->assertNull($this->cacheManager->get($key));
+
+        exec('php artisan clustercache:testbackground \'' . $key . '\' \'' . $value . '\'');
+
+        $this->assertEquals($value, $this->cacheManager->get($key));
     }
 }
