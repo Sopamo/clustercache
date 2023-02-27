@@ -63,25 +63,39 @@ class CacheManagerTest extends TestCase
     public function block_putting_data_while_putting_in_other_process() {
         $key = 'key: block_putting_data_while_putting_in_other_process';
 
-        $this->cacheManager->delete($key);
+        logger('Test: before delete ' . microtime(true));
+        logger($this->cacheManager->delete($key));
+        logger('CacheEntry::where');
+        logger(json_encode(CacheEntry::where('key', $key)->first()));
 
-        exec('php artisan clustercache:testbackground \'key: block_putting_data_while_putting_in_other_process\' > /dev/null 2>&1 &');
-        usleep(500000);
+        logger('Test: before command ' . microtime(true));
+        exec('php artisan clustercache:testbackground \'' . $key . '\' > /dev/null 2>&1 &');
+        logger('Test: before sleep ' . microtime(true));
+        sleep(2);
+        logger('Test: after sleep ' . microtime(true));
+
+        logger('CacheEntry::where');
+        logger(json_encode(CacheEntry::where('key', $key)->first()));
 
         $this->assertFalse($this->cacheManager->put($key, $this->value));
     }
 
     /** @test */
     public function get_data_which_was_saved_by_other_process() {
-        $key = 'key: get_data_which_was_saved_by_other_process';
+        $key = 'key: gzgzgztztztz';
         $value = 'value';
 
-        $this->cacheManager->delete($key);
+        logger('Test: before deleting ' . microtime(true));
+        logger($this->cacheManager->delete($key));
+        logger('Test: after deleting ' . microtime(true));
 
         $this->assertNull($this->cacheManager->get($key));
+        logger('Test: after get ' . microtime(true));
 
         exec('php artisan clustercache:testbackground \'' . $key . '\' \'' . $value . '\'');
+        logger('Test: after artisan '. microtime(true));
 
         $this->assertEquals($value, $this->cacheManager->get($key));
+        logger('Test: after get 2 '. microtime(true));
     }
 }

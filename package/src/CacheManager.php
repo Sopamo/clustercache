@@ -36,17 +36,22 @@ class CacheManager
     }
 
     public function put(string $key, mixed $value, int $ttl = 0):bool {
+        logger('before eventLocker '. microtime(true));
         if($this->eventLocker->isLocked($key)) {
             return false;
         }
+        logger('before dbLocker '. microtime(true));
         if($this->dbLocker->isLocked($key)) {
             return false;
         }
 
+        logger('before DB acquire '. microtime(true));
         $this->dbLocker->acquire($key);
         var_dump('DB acquires');
+        logger('before triggerAll '. microtime(true));
         $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_IS_UPDATING']), $key);
         try{
+            logger('before updateOrCreate '. microtime(true));
             $cacheEntry = CacheEntry::updateOrCreate(
                 ['key' => $key],
                 [
@@ -55,13 +60,18 @@ class CacheManager
                 ]
             );
             var_dump('added');
+            logger('before triggerAll 2 '. microtime(true));
             $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
+            logger('before putIntoLocalCache '. microtime(true));
             $this->putIntoLocalCache($cacheEntry);
+            logger('before DB locker release '. microtime(true));
             $this->dbLocker->release($key);
+            logger('after DB locker release '. microtime(true));
 
             return true;
         } catch (CacheEntryValueIsOutOfMemoryException $e) {
             $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_UPDATING_HAS_CANCELED']), $key);
+            logger('before DB locker release in Exception'. microtime(true));
             $this->dbLocker->release($key);
 
             return false;
@@ -118,23 +128,33 @@ class CacheManager
      * @throws NotFoundExceptionInterface
      */
     public function delete(string $key):bool {
+        logger('CacheManager: delete: before eventLocker->isLocked ' . microtime(true));
         if($this->eventLocker->isLocked($key)) {
             return false;
         }
+        logger('CacheManager: delete: before dbLocker->isLocked ' . microtime(true));
         if($this->dbLocker->isLocked($key)) {
             return false;
         }
 
+        logger('CacheManager: delete: before dbLocker->acquire ' . microtime(true));
         $this->dbLocker->acquire($key);
+        logger('CacheManager: delete: before triggerAll ' . microtime(true));
         $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_IS_UPDATING']), $key);
+        logger('CacheManager: delete: before CacheEntry->delete ' . microtime(true));
         CacheEntry::where('key', $key)->delete();
+        logger('CacheManager: delete: before metaInformation->get ' . microtime(true));
         $metaInformation = $this->metaInformation->get($key);
         if($metaInformation) {
             $this->memoryDriver->delete($metaInformation['memory_key'], $metaInformation['length']);
         }
+        logger('CacheManager: delete: before metaInformation->delete ' . microtime(true));
         $this->metaInformation->delete($key);
+        logger('CacheManager: delete: before triggerAll ' . microtime(true));
         $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
+        logger('CacheManager: delete: before dbLocker->release ' . microtime(true));
         $this->dbLocker->release($key);
+        logger('CacheManager: delete: after dbLocker->release ' . microtime(true));
 
         return true;
     }
