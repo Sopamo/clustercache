@@ -35,18 +35,21 @@ class TestBackground extends Command
 
         logger($cacheKey);
 
-        logger('before connection ' . microtime(true));
+        logger('Command: before connection ' . microtime(true));
         Config::set('database.default', 'testing');
         DB::setDefaultConnection('testing');
 
-        logger('before cacheManager ' . microtime(true));
+        logger('Command: before CacheEntry::all() ' . microtime(true));
+        logger(json_encode(CacheEntry::all()));
+
+        logger('Command: before cacheManager ' . microtime(true));
         $this->cacheManager = app(CacheManager::class, ['memoryDriver' => MemoryDriver::fromString('SHMOP')]);
 
         logger($value);
 
-        logger('before put ' . microtime(true));
+        logger('Command: before put ' . microtime(true));
         $this->cacheManager->put($cacheKey, $value);
-        logger('after put ' . microtime(true));
+        logger('Command: after put ' . microtime(true));
         return 0;
     }
 
