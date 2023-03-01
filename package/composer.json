@@ -26,11 +26,6 @@
             "Sopamo\\ClusterCache\\Database\\Factories\\": "database/factories"
         }
     },
-    "autoload-dev": {
-        "psr-4": {
-            "Sopamo\\ClusterCache\\Tests\\": "tests"
-        }
-    },
     "extra": {
         "laravel": {
             "providers": [
