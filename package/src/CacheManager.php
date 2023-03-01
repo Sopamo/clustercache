@@ -36,22 +36,16 @@ class CacheManager
     }
 
     public function put(string $key, mixed $value, int $ttl = 0):bool {
-        logger('before eventLocker '. microtime(true));
         if($this->eventLocker->isLocked($key)) {
             return false;
         }
-        logger('before dbLocker '. microtime(true));
         if($this->dbLocker->isLocked($key)) {
             return false;
         }
 
-        logger('before DB acquire '. microtime(true));
         $this->dbLocker->acquire($key);
-        var_dump('DB acquires');
-        logger('before triggerAll '. microtime(true));
         $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_IS_UPDATING']), $key);
         try{
-            logger('before updateOrCreate '. microtime(true));
             $cacheEntry = CacheEntry::updateOrCreate(
                 ['key' => $key],
                 [
@@ -59,19 +53,13 @@ class CacheManager
                     'ttl' => $ttl,
                 ]
             );
-            var_dump('added');
-            logger('before triggerAll 2 '. microtime(true));
             $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
-            logger('before putIntoLocalCache '. microtime(true));
             $this->putIntoLocalCache($cacheEntry);
-            logger('before DB locker release '. microtime(true));
             $this->dbLocker->release($key);
-            logger('after DB locker release '. microtime(true));
 
             return true;
         } catch (CacheEntryValueIsOutOfMemoryException $e) {
             $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_UPDATING_HAS_CANCELED']), $key);
-            logger('before DB locker release in Exception'. microtime(true));
             $this->dbLocker->release($key);
 
             return false;
