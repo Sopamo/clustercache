@@ -80,10 +80,24 @@ class CacheManagerTest extends TestCase
     }
 
     /** @test */
+    public function block_deleting_data_while_putting_in_other_process() {
+        Artisan::call('migrate:refresh');
+
+        $key = 'key: block_deleting_data_while_putting_in_other_process hhh';
+
+        $this->cacheManager->delete($key);
+
+        exec('php artisan clustercache:testbackground \'' . $key . '\' > /dev/null 2>&1 &');
+        sleep(1);
+
+        $this->assertFalse($this->cacheManager->delete($key, $this->value));
+    }
+
+    /** @test */
     public function get_data_which_was_saved_by_other_process() {
         Artisan::call('migrate:refresh');
 
-        $key = 'key: gzgzgztztzrfaaaggatg';
+        $key = 'key: get_data_which_was_saved_by_other_process';
         $value = 'value';
 
         $this->cacheManager->delete($key);

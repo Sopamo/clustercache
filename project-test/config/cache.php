@@ -37,6 +37,10 @@ return [
             'driver' => 'apc',
         ],
 
+        'clustercache' => [
+            'driver' => 'clustercache',
+        ],
+
         'array' => [
             'driver' => 'array',
             'serialize' => false,

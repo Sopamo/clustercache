@@ -4,6 +4,7 @@ namespace Sopamo\ClusterCache;
 
 use Illuminate\Contracts\Cache\Store;
 use Sopamo\ClusterCache\Exceptions\UnexpectedTypeException;
+use Sopamo\ClusterCache\Models\CacheEntry;
 
 class ClusterCacheStore implements Store
 {
@@ -24,7 +25,7 @@ class ClusterCacheStore implements Store
         $this->prefix = ! empty($prefix) ? $prefix.':' : '';
     }
 
-    public function get($key)
+    public function get($key):mixed
     {
         return $this->cacheManager->get($this->prefix.$key);
     }
@@ -40,9 +41,9 @@ class ClusterCacheStore implements Store
         return $cachedEntries;
     }
 
-    public function put($key, $value, $seconds = 0)
+    public function put($key, $value, $seconds = 0): bool
     {
-        $this->cacheManager->put($this->prefix.$key, $value, $seconds);
+        return $this->cacheManager->put($this->prefix.$key, $value, $seconds);
     }
 
     public function putMany(array $values, $seconds)
@@ -52,7 +53,7 @@ class ClusterCacheStore implements Store
         }
     }
 
-    public function increment($key, $value = 1)
+    public function increment($key, $value = 1):bool|int
     {
         try{
             $cachedValue = $this->get($key);
@@ -66,33 +67,55 @@ class ClusterCacheStore implements Store
 
         $finalValue = $cachedValue + $value;
 
-        $this->cacheManager->put($key, $finalValue);
+        $this->put($key, $finalValue);
 
         return $finalValue;
     }
 
-    public function decrement($key, $value = 1)
+    public function decrement($key, $value = 1):bool|int
     {
-        // TODO: Implement decrement() method.
+        try{
+            $cachedValue = $this->get($key);
+
+            if(!is_numeric($cachedValue)) {
+                throw new UnexpectedTypeException('The incremented value has to be numeric');
+            }
+        } catch (UnexpectedTypeException $e) {
+            return false;
+        }
+
+        $finalValue = $cachedValue - $value;
+
+        $this->put($key, $finalValue);
+
+        return $finalValue;
     }
 
-    public function forever($key, $value)
+    public function forever($key, $value): bool
     {
-        // TODO: Implement forever() method.
+        return $this->put($key, $value);
     }
 
-    public function forget($key)
+    public function forget($key):bool
     {
-        // TODO: Implement forget() method.
+        return $this->cacheManager->delete($this->prefix.$key);
     }
 
-    public function flush()
+    public function flush(): bool
     {
-        // TODO: Implement flush() method.
+        $cacheEntries = CacheEntry::select('key')->get();
+
+        foreach ($cacheEntries as $cacheEntry) {
+            if(!$this->cacheManager->delete($cacheEntry->key)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
-    public function getPrefix()
+    public function getPrefix(): string
     {
-        // TODO: Implement getPrefix() method.
+        return $this->prefix;
     }
 }

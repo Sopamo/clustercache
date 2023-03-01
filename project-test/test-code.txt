@@ -36,3 +36,7 @@ CacheManager::put('cache key', $pages);
 MetaInformation::get('cache key');
 CacheManager::get('cache key');
 CacheManager::delete('cache key');
+
+$value = Cache::store('clustercache')->get('foo');
+Cache::store('clustercache')->put('foo', 'test');
+$value = Cache::store('clustercache')->get('foo');
