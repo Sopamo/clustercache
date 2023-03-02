@@ -8,9 +8,9 @@ class MetaInformation
 {
     const RESERVED_KEY = 1;
     /**
-     * 10 MB
+     * 1 MB
      */
-    const RESERVED_LENGTH_IN_BYTES = 10485760;
+    const RESERVED_LENGTH_IN_BYTES = 1048576;
     private static MemoryDriverInterface $memoryDriver;
 
     public static function setMemoryDriver(MemoryDriverInterface $memoryDriver): void
