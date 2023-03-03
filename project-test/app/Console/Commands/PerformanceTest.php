@@ -32,6 +32,12 @@ class PerformanceTest extends Command
             'difference' => '-'
         ];
 
+        $results['redis'] = [
+            'driver' => 'redis',
+            'executionTime' => $this->measureExecutionTime(fn() => Cache::store('redis')->get($cacheKey))
+        ];
+        $results['redis']['difference'] = $results['redis']['executionTime'] - $results['clustercache']['executionTime'];
+
         $results['file'] = [
             'driver' => 'file',
             'executionTime' => $this->measureExecutionTime(fn() => Cache::store('file')->get($cacheKey))

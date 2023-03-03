@@ -35,6 +35,7 @@ class CacheEntry extends Model
             get: fn ($value) => Serialization::unserialize($value),
             set: function ($value)  {
                 $serializedValue = Serialization::serialize($value);
+                logger(strlen($serializedValue));
                 if(strlen($serializedValue) > self::VALUE_LENGTH_LIMIT) {
                     throw new CacheEntryValueIsOutOfMemoryException();
                 }

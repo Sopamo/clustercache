@@ -1,0 +1,29 @@
+$str = Str::random(80);
+$value = [];
+
+for($i = 0; $i < 90000; $i++) {
+    $value[] = $str;
+}
+$serializedValue = serialize($value);
+$serializedValue2 = igbinary_serialize($value);
+$encodedValue = json_encode($value);
+
+$start = microtime(true);
+unserialize($serializedValue);
+$end = microtime(true);
+
+echo 'Unserialize: ' . $end - $start;
+
+$start = microtime(true);
+json_decode($encodedValue);
+$end = microtime(true);
+
+echo 'json_decode: ' . $end - $start;
+
+$start = microtime(true);
+igbinary_unserialize($serializedValue2);
+$end = microtime(true);
+
+echo 'igbinary_unserialize: ' . $end - $start;
+
+echo 'aaa';
