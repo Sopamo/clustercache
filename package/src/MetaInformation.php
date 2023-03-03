@@ -40,7 +40,7 @@ class MetaInformation
     public function put(string $key, array $value): array {
         $data = $this->getAll();
         $data[$key] = $value;
-        self::$memoryDriver->put(self::RESERVED_KEY, serialize($data), self::RESERVED_LENGTH_IN_BYTES);
+        self::$memoryDriver->put(self::RESERVED_KEY,  Serialization::serialize($data), self::RESERVED_LENGTH_IN_BYTES);
 
         return $data[$key];
     }
@@ -48,7 +48,7 @@ class MetaInformation
     public function delete(string $key): void {
         $data = $this->getAll();
         unset($data[$key]);
-        self::$memoryDriver->put(self::RESERVED_KEY, serialize($data), self::RESERVED_LENGTH_IN_BYTES);
+        self::$memoryDriver->put(self::RESERVED_KEY, Serialization::serialize($data), self::RESERVED_LENGTH_IN_BYTES);
     }
 
     private function getAll():array {
@@ -56,6 +56,6 @@ class MetaInformation
         if(!$data) {
             return [];
         }
-        return unserialize($data);
+        return Serialization::unserialize($data);
     }
 }

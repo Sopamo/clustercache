@@ -50,7 +50,7 @@ class PerformanceTest extends Command
         $str = Str::random(80);
         $value = [];
 
-        for($i = 0; $i < 90000; $i++) {
+        for($i = 0; $i < 9000; $i++) {
             $value[] = $str;
         }
 

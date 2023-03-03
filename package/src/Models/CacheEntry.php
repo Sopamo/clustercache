@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Sopamo\ClusterCache\Database\Factories\CacheEntryFactory;
 use Sopamo\ClusterCache\Exceptions\CacheEntryValueIsOutOfMemoryException;
+use Sopamo\ClusterCache\Serialization;
 
 class CacheEntry extends Model
 {
@@ -31,9 +32,9 @@ class CacheEntry extends Model
     protected function value(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => unserialize($value),
+            get: fn ($value) => Serialization::unserialize($value),
             set: function ($value)  {
-                $serializedValue = serialize($value);
+                $serializedValue = Serialization::serialize($value);
                 if(strlen($serializedValue) > self::VALUE_LENGTH_LIMIT) {
                     throw new CacheEntryValueIsOutOfMemoryException();
                 }

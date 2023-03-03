@@ -95,7 +95,7 @@ class CacheManager
             if(!$cachedValue) {
                 throw new NotFoundLocalCacheKeyException();
             }
-            $cachedValue = unserialize($cachedValue);
+            $cachedValue = Serialization::unserialize($cachedValue);
         } catch (NotFoundLocalCacheKeyException) {
             $cacheEntry = CacheEntry::where('key', $key)->first();
 
@@ -139,7 +139,7 @@ class CacheManager
 
     private function putIntoLocalCache(CacheEntry $cacheEntry): void
     {
-        $value = serialize($cacheEntry->value);
+        $value = Serialization::serialize($cacheEntry->value);
         $valueLength = strlen($value);
 
         $metaInformation = $this->metaInformation->get($cacheEntry->key);

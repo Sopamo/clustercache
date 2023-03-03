@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -16,11 +17,11 @@ return new class extends Migration
         Schema::create('cache_entries', function (Blueprint $table) {
             $table->id();
             $table->string('key')->unique();
-            $table->longText('value');
             $table->unsignedInteger('ttl')->default(0);
             $table->timestamp('locked_at')->nullable();
             $table->timestamps();
         });
+        DB::statement("ALTER TABLE cache_entries ADD value LONGBLOB");
     }
 
     /**
