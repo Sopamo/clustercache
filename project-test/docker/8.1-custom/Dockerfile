@@ -13,7 +13,7 @@ ENV NGINX_VERSION 1.21.6
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/install-php-extensions && \
-    install-php-extensions apcu shmop
+    install-php-extensions apcu shmop igbinary
 
 # resolves #166
 #ENV LD_PRELOAD /usr/lib/preloadable_libiconv.so php
