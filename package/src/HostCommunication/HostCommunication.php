@@ -6,10 +6,6 @@ use Sopamo\ClusterCache\Models\Host;
 
 class HostCommunication
 {
-    public function trigger(Event $event, Host $host, string $cacheKey = null): void
-    {
-        // TO DO
-    }
     public function triggerAll(Event $event, string $cacheKey = null): void
     {
         $hosts = Host::all();
@@ -17,5 +13,10 @@ class HostCommunication
         foreach ($hosts as $host) {
             $this->trigger($event, $host, $cacheKey);
         }
+    }
+
+    public function trigger(Event $event, Host $host, string $cacheKey = null): void
+    {
+        // TO DO
     }
 }

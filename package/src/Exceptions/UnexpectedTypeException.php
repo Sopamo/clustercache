@@ -2,7 +2,9 @@
 
 namespace Sopamo\ClusterCache\Exceptions;
 
-class UnexpectedTypeException extends \Exception
+use Exception;
+
+class UnexpectedTypeException extends Exception
 {
 
 }

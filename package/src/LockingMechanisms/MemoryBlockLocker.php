@@ -21,11 +21,12 @@ class MemoryBlockLocker
      * @return bool
      * @TODO Implements timeout for a lock
      */
-    public function isLocked(string $key, int $retryIntervalMilliseconds = 200, int $attemptLimit = 3): bool {
+    public function isLocked(string $key, int $retryIntervalMilliseconds = 200, int $attemptLimit = 3): bool
+    {
         $retryIntervalMicroseconds = $retryIntervalMilliseconds * 1000;
-        for($i = 0; $i < $attemptLimit; $i++) {
+        for ($i = 0; $i < $attemptLimit; $i++) {
             $metaInformation = $this->metaInformation->get($key);
-            if(!$metaInformation || !$metaInformation['is_being_written']) {
+            if (!$metaInformation || !$metaInformation['is_being_written']) {
                 return false;
             }
             usleep($retryIntervalMicroseconds);

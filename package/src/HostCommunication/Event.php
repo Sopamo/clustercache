@@ -2,6 +2,8 @@
 
 namespace Sopamo\ClusterCache\HostCommunication;
 
+use InvalidArgumentException;
+
 class Event
 {
     public static array $allEvents = [
@@ -17,12 +19,12 @@ class Event
     public function __construct(string $event)
     {
         if (!in_array($event, self::$allEvents)) {
-            throw new \InvalidArgumentException('The event "' . $event . '" is unavailable');
+            throw new InvalidArgumentException('The event "'.$event.'" is unavailable');
         }
         $this->value = $event;
     }
 
-    public static function fromInt(int $event):self
+    public static function fromInt(int $event): self
     {
         return new self($event);
     }

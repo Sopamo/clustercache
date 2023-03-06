@@ -2,7 +2,9 @@
 
 namespace Sopamo\ClusterCache\Exceptions;
 
-class CacheEntryValueIsOutOfMemoryException extends \Exception
+use Exception;
+
+class CacheEntryValueIsOutOfMemoryException extends Exception
 {
 
 }

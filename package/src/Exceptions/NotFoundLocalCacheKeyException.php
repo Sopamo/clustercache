@@ -2,7 +2,9 @@
 
 namespace Sopamo\ClusterCache\Exceptions;
 
-class NotFoundLocalCacheKeyException extends \Exception
+use Exception;
+
+class NotFoundLocalCacheKeyException extends Exception
 {
 
 }

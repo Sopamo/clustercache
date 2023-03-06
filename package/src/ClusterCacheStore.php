@@ -20,16 +20,6 @@ class ClusterCacheStore implements Store
         MetaInformation::setMemoryDriver($memoryDriver->driver);
     }
 
-    public function setPrefix(string $prefix): void
-    {
-        $this->prefix = ! empty($prefix) ? $prefix.':' : '';
-    }
-
-    public function get($key):mixed
-    {
-        return $this->cacheManager->get($this->prefix.$key);
-    }
-
     public function many(array $keys): array
     {
         $cachedEntries = [];
@@ -41,9 +31,9 @@ class ClusterCacheStore implements Store
         return $cachedEntries;
     }
 
-    public function put($key, $value, $seconds = 0): bool
+    public function get($key): mixed
     {
-        return $this->cacheManager->put($this->prefix.$key, $value, $seconds);
+        return $this->cacheManager->get($this->prefix.$key);
     }
 
     public function putMany(array $values, $seconds)
@@ -53,12 +43,17 @@ class ClusterCacheStore implements Store
         }
     }
 
-    public function increment($key, $value = 1):bool|int
+    public function put($key, $value, $seconds = 0): bool
     {
-        try{
+        return $this->cacheManager->put($this->prefix.$key, $value, $seconds);
+    }
+
+    public function increment($key, $value = 1): bool|int
+    {
+        try {
             $cachedValue = $this->get($key);
 
-            if(!is_numeric($cachedValue)) {
+            if (!is_numeric($cachedValue)) {
                 throw new UnexpectedTypeException('The incremented value has to be numeric');
             }
         } catch (UnexpectedTypeException $e) {
@@ -72,12 +67,12 @@ class ClusterCacheStore implements Store
         return $finalValue;
     }
 
-    public function decrement($key, $value = 1):bool|int
+    public function decrement($key, $value = 1): bool|int
     {
-        try{
+        try {
             $cachedValue = $this->get($key);
 
-            if(!is_numeric($cachedValue)) {
+            if (!is_numeric($cachedValue)) {
                 throw new UnexpectedTypeException('The incremented value has to be numeric');
             }
         } catch (UnexpectedTypeException $e) {
@@ -96,7 +91,7 @@ class ClusterCacheStore implements Store
         return $this->put($key, $value);
     }
 
-    public function forget($key):bool
+    public function forget($key): bool
     {
         return $this->cacheManager->delete($this->prefix.$key);
     }
@@ -106,7 +101,7 @@ class ClusterCacheStore implements Store
         $cacheEntries = CacheEntry::select('key')->get();
 
         foreach ($cacheEntries as $cacheEntry) {
-            if(!$this->cacheManager->delete($cacheEntry->key)) {
+            if (!$this->cacheManager->delete($cacheEntry->key)) {
                 return false;
             }
         }
@@ -117,5 +112,10 @@ class ClusterCacheStore implements Store
     public function getPrefix(): string
     {
         return $this->prefix;
+    }
+
+    public function setPrefix(string $prefix): void
+    {
+        $this->prefix = !empty($prefix) ? $prefix.':' : '';
     }
 }

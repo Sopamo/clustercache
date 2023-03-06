@@ -12,10 +12,11 @@ class DBLocker
      */
     public static int $timeout = 30;
 
-    public function acquire(string $key): void {
+    public function acquire(string $key): void
+    {
         $cacheEntry = CacheEntry::select(['id', 'locked_at'])->where('key', $key)->first();
 
-        if(!$cacheEntry) {
+        if (!$cacheEntry) {
             $cacheEntry = new CacheEntry();
             $cacheEntry->key = $key;
             $cacheEntry->value = '';
@@ -24,10 +25,12 @@ class DBLocker
         $cacheEntry->locked_at = TimeHelpers::getNowFromDB();
         $cacheEntry->save();
     }
-    public function release(string $key): void {
+
+    public function release(string $key): void
+    {
         $cacheEntry = CacheEntry::select(['id', 'locked_at'])->where('key', $key)->first();
 
-        if($cacheEntry) {
+        if ($cacheEntry) {
             $cacheEntry->locked_at = null;
             $cacheEntry->save();
         }
@@ -39,12 +42,13 @@ class DBLocker
      * @param  int  $attemptLimit
      * @return bool
      */
-    public function isLocked(string $key, int $retryIntervalMilliseconds = 200, int $attemptLimit = 3): bool {
+    public function isLocked(string $key, int $retryIntervalMilliseconds = 200, int $attemptLimit = 3): bool
+    {
         $retryIntervalMicroseconds = $retryIntervalMilliseconds * 1000;
 
-        for($i = 0; $i < $attemptLimit-1; $i++) {
+        for ($i = 0; $i < $attemptLimit - 1; $i++) {
             $isLocked = CacheEntry::where('key', $key)->whereNotNull('locked_at')->exists();
-            if(!$isLocked) {
+            if (!$isLocked) {
                 return false;
             }
             usleep($retryIntervalMicroseconds);
@@ -52,13 +56,13 @@ class DBLocker
 
         $cacheEntry = CacheEntry::select(['locked_at'])->where('key', $key)->first();
 
-        if(!$cacheEntry) {
+        if (!$cacheEntry) {
             return false;
         }
-        if(!$cacheEntry->locked_at) {
+        if (!$cacheEntry->locked_at) {
             return false;
         }
-        if($cacheEntry->locked_at->addSeconds(self::$timeout + TimeHelpers::getTimeShift())->isPast()) {
+        if ($cacheEntry->locked_at->addSeconds(self::$timeout + TimeHelpers::getTimeShift())->isPast()) {
             return false;
         }
 

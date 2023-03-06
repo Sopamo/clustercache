@@ -2,7 +2,9 @@
 
 namespace Sopamo\ClusterCache\Exceptions;
 
-class MemoryBlockDoesntExistException extends \Exception
+use Exception;
+
+class MemoryBlockDoesntExistException extends Exception
 {
 
 }

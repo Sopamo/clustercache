@@ -13,6 +13,7 @@ use Sopamo\ClusterCache\Serialization;
 class CacheEntry extends Model
 {
     use HasFactory;
+
     /**
      * 4GB is the limit of the length of longtext in MySQL
      */
@@ -32,15 +33,15 @@ class CacheEntry extends Model
     protected function value(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => Serialization::unserialize($value),
-            set: function ($value)  {
+            get: fn($value) => Serialization::unserialize($value),
+            set: function ($value) {
                 $serializedValue = Serialization::serialize($value);
                 logger(strlen($serializedValue));
-                if(strlen($serializedValue) > self::VALUE_LENGTH_LIMIT) {
+                if (strlen($serializedValue) > self::VALUE_LENGTH_LIMIT) {
                     throw new CacheEntryValueIsOutOfMemoryException();
                 }
                 return $serializedValue;
-            } ,
+            },
         );
     }
 }

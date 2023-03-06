@@ -10,6 +10,7 @@ use Sopamo\ClusterCache\Database\Factories\HostFactory;
 class Host extends Model
 {
     use HasFactory;
+
     protected $guarded = [];
 
     protected static function newFactory(): Factory
