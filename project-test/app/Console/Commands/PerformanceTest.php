@@ -65,7 +65,10 @@ class PerformanceTest extends Command
 
     private function measureExecutionTime($function) {
         $start = microtime(true);
-        $function();
+        $i = 1000;
+        while($i--) {
+            $function();
+        }
         return microtime(true) - $start;
     }
 
