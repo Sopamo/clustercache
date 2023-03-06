@@ -6,6 +6,14 @@ Speed up your application using Cluster Cache
 <hr>
 <br />
 
+## Requirements
+
+* Laravel >= 9.0
+* [SHMOP](https://www.php.net/manual/en/ref.shmop.php)
+
+### Optional Requirements
+* [Igbinary](https://www.php.net/manual/en/book.igbinary.php) - it isn't mandatory but influences on the performance
+
 ## Installation
 ```bash
 composer require sopamo/clustercache
