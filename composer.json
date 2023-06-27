@@ -21,8 +21,8 @@
     },
     "autoload": {
         "psr-4": {
-            "Sopamo\\ClusterCache\\": "src",
-            "Sopamo\\ClusterCache\\Database\\Factories\\": "database/factories"
+            "Sopamo\\ClusterCache\\": "package/src",
+            "Sopamo\\ClusterCache\\Database\\Factories\\": "package/database/factories"
         }
     },
     "extra": {
