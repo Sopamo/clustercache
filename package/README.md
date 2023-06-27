@@ -20,11 +20,14 @@ composer require sopamo/clustercache
 ```
 
 ## Setup
-You need to add the `clustercache` driver into your `config/cache.php`:
+You need to add a new `clustercache` store to your `config/cache.php`:
 ```php
-'clustercache' => [
-    'driver' => 'clustercache',
-]
+'stores' => [
+  'clustercache' => [
+      'driver' => 'clustercache',
+  ],
+  // Your existing stores stay here
+],
 ```
 
 You can publish the package configuration using the command listed below. Then, you can change the configuration.
