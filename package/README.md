@@ -14,6 +14,26 @@ Speed up your application using Cluster Cache
 ### Optional Requirements
 * [Igbinary](https://www.php.net/manual/en/book.igbinary.php) - it isn't mandatory but influences on the performance
 
+## SHMOP installation
+
+### Ubuntu / Debian
+
+On the Linux distributions, you can install the extension from the official repo:
+
+```bash
+sudo apt-get update 
+sudo apt-get install php-shmop
+```
+
+### Docker
+You can use [Docker PHP Extension Installer](https://github.com/mlocati/docker-php-extension-installer) to install SHMOP extension in the image:
+```bash 
+ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+
+RUN chmod +x /usr/local/bin/install-php-extensions && \
+    install-php-extensions shmop
+```
+
 ## Installation
 ```bash
 composer require sopamo/clustercache
