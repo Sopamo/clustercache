@@ -18,7 +18,7 @@ Speed up your application using Cluster Cache
 
 ### Ubuntu / Debian
 
-On the Linux distributions, you can install the extension from the official repo:
+On Ubuntu / Debian based distributions, you can install the extension via apt:
 
 ```bash
 sudo apt-get update 
