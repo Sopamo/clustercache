@@ -10,11 +10,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 ENV NGINX_VERSION 1.21.6
 
-ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
-
-RUN chmod +x /usr/local/bin/install-php-extensions && \
-    install-php-extensions apcu shmop igbinary
-
 # resolves #166
 #ENV LD_PRELOAD /usr/lib/preloadable_libiconv.so php
 #RUN apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/community gnu-libiconv
@@ -182,7 +177,7 @@ RUN apt-get install -y -q --no-install-recommends --no-install-suggests \
       wkhtmltopdf \
     && pecl install zip imagick && \
     docker-php-ext-configure gd --with-freetype --with-jpeg && \
-    docker-php-ext-install -j$(nproc) bcmath gd pcntl iconv pdo_mysql exif opcache && \
+    docker-php-ext-install -j$(nproc) bcmath gd pcntl iconv pdo_mysql exif opcache shmop && \
     docker-php-ext-enable imagick zip && \
     pecl install -o -f redis mongodb && \
     echo "extension=redis.so" > /usr/local/etc/php/conf.d/redis.ini && \
