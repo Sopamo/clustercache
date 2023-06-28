@@ -1,4 +1,3 @@
-
 <div align="center">
 <h1>Cluster Cache</h1>
 Speed up your application using Cluster Cache 
