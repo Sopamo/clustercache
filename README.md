@@ -5,7 +5,7 @@ Speed up your application using Cluster Cache
 <hr>
 <br />
 
-## Instalation and usage
+## Installation and usage
 
 Please open `package/README.md` to read details about the package installation and usage.
 

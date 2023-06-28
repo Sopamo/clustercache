@@ -25,10 +25,10 @@ sudo apt-get install php-shmop
 ```
 
 ### Docker
-You can use the bellow command to install SHMOP extension in the image:
+You can use the following command to install the SHMOP extension in your image:
+
 ```bash 
 RUN docker-php-ext-install shmop
-
 ```
 
 ## Installation
