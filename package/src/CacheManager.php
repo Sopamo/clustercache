@@ -121,7 +121,7 @@ class CacheManager
                 return $default;
             }
 
-            $expiredAt = (int)$metaInformation['updated_at'] + (int)$metaInformation['ttl'];
+            $expiredAt = $metaInformation['updated_at'] + $metaInformation['ttl'];
             if ($metaInformation['ttl'] && Carbon::now()->getTimestamp() > $expiredAt) {
                 $this->delete($key);
                 return $default;

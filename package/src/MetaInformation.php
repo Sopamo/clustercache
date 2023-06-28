@@ -20,16 +20,15 @@ class MetaInformation
 
     /**
      * @param  string  $key
-     * @param  mixed|null  $default
-     * @return mixed|array{memory_key: string, length: int, is_locked: bool, is_being_written: bool, updated_at: int, ttl: int}
+     * @return null|array{memory_key: string|int, length: int, is_locked: bool, is_being_written: bool, updated_at: int, ttl: int}
      */
-    public function get(string $key, mixed $default = null): mixed
+    public function get(string $key): mixed
     {
         $data = $this->getAll();
         if (isset($data[$key])) {
             return $data[$key];
         }
-        return $default;
+        return null;
     }
 
     private function getAll(): array
@@ -50,7 +49,7 @@ class MetaInformation
 
     /**
      * @param  string  $key
-     * @param  array{memory_key: string, length: int, is_locked: bool, is_being_written: bool, updated_at: int, ttl: int}  $value
+     * @param  array{memory_key: string|int, length: int, is_locked: bool, is_being_written: bool, updated_at: int, ttl: int}  $value
      * @return array
      */
     public function put(string $key, array $value): array
