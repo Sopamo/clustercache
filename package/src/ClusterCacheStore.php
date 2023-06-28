@@ -33,6 +33,9 @@ class ClusterCacheStore implements Store
 
     public function get($key): mixed
     {
+        if(is_array($key)) {
+            $key = array_values($key)[0];
+        }
         return $this->cacheManager->get($this->prefix.$key);
     }
 
@@ -41,6 +44,8 @@ class ClusterCacheStore implements Store
         foreach ($values as $key => $value) {
             $this->put($key, $value, $seconds);
         }
+
+        return true;
     }
 
     public function put($key, $value, $seconds = 0): bool

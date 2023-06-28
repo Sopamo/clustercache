@@ -7,7 +7,7 @@ use Illuminate\Support\ServiceProvider;
 
 class ClusterCacheServiceProvider extends ServiceProvider
 {
-    public function register()
+    public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/config.php', 'clustercache');
 
@@ -19,7 +19,7 @@ class ClusterCacheServiceProvider extends ServiceProvider
         });
     }
 
-    public function boot()
+    public function boot(): void
     {
         if (!class_exists('CreateHostsTable')) {
             $this->publishes([

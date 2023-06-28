@@ -2,6 +2,7 @@
 
 namespace Sopamo\ClusterCache;
 
+use Exception;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -9,12 +10,17 @@ class TimeHelpers
 {
     /**
      * Returns the shift between the host and the database server
+     * @throws Exception
      */
     public static function getTimeShift(): int
     {
         $nowFromDB = Carbon::createFromFormat('Y-m-d H:i:s', self::getNowFromDB());
 
-        return Carbon::now()->timestamp - $nowFromDB->timestamp;
+        if(!$nowFromDB) {
+            throw new Exception('The wrong data format');
+        }
+
+        return Carbon::now()->getTimestamp() - $nowFromDB->getTimestamp();
     }
 
     public static function getNowFromDB(): string

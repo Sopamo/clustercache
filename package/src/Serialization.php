@@ -4,7 +4,7 @@ namespace Sopamo\ClusterCache;
 
 class Serialization
 {
-    public static function serialize($value): ?string
+    public static function serialize(mixed $value): ?string
     {
         if (function_exists('igbinary_serialize')) {
             return igbinary_serialize($value);
@@ -12,7 +12,7 @@ class Serialization
         return serialize($value);
     }
 
-    public static function unserialize($value): mixed
+    public static function unserialize(string $value): mixed
     {
         if (function_exists('igbinary_unserialize')) {
             return igbinary_unserialize($value);
