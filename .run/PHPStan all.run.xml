@@ -2,7 +2,7 @@
   <configuration default="false" name="PHPStan all" type="PhpLocalRunConfigurationType" factoryName="PHP Console" path="/var/www/html/vendor/bin/phpstan" scriptParameters="analyse --memory-limit=4G">
     <CommandLine>
       <PhpTestInterpreterSettings>
-        <option name="interpreterName" value="laravel.test" />
+        <option name="interpreterName" value="clustercache1" />
       </PhpTestInterpreterSettings>
     </CommandLine>
     <method v="2" />
