@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="true" type="PHPUnitRunConfigurationType" factoryName="PHPUnit">
+    <CommandLine>
+      <envs>
+        <env name="SKIP_REFRESH_DB_STATE" value="1" />
+      </envs>
+    </CommandLine>
+    <TestRunner />
+    <method v="2" />
+  </configuration>
+</component>

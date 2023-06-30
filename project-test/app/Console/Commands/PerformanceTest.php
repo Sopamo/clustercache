@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\DBLockerWithLongLocking;
+use Closure;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -63,7 +64,7 @@ class PerformanceTest extends Command
         return $value;
     }
 
-    private function measureExecutionTime($function) {
+    private function measureExecutionTime(Closure $function):float {
         $start = microtime(true);
         $i = 1000;
         while($i--) {

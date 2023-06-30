@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="PHPStan all" type="PhpLocalRunConfigurationType" factoryName="PHP Console" path="/var/www/html/vendor/bin/phpstan" scriptParameters="analyse --memory-limit=4G">
+    <CommandLine>
+      <PhpTestInterpreterSettings>
+        <option name="interpreterName" value="laravel.test" />
+      </PhpTestInterpreterSettings>
+    </CommandLine>
+    <method v="2" />
+  </configuration>
+</component>

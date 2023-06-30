@@ -14,9 +14,9 @@ class Event
         'FETCH_HOSTS' => 5,
     ];
 
-    public string $value;
+    public int $value;
 
-    public function __construct(string $event)
+    public function __construct(int $event)
     {
         if (!in_array($event, self::$allEvents)) {
             throw new InvalidArgumentException('The event "'.$event.'" is unavailable');

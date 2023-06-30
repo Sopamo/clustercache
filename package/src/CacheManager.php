@@ -91,7 +91,7 @@ class CacheManager
             $metaInformation['length'] = $valueLength;
         }
 
-        $metaInformation['updated_at'] = $cacheEntry->updated_at->timestamp + TimeHelpers::getTimeShift();
+        $metaInformation['updated_at'] = $cacheEntry->updated_at->getTimestamp() + TimeHelpers::getTimeShift();
         $metaInformation['ttl'] = $cacheEntry->ttl;
         $this->metaInformation->put($cacheEntry->key, $metaInformation);
 
@@ -122,7 +122,7 @@ class CacheManager
             }
 
             $expiredAt = $metaInformation['updated_at'] + $metaInformation['ttl'];
-            if ($metaInformation['ttl'] && Carbon::now()->timestamp > $expiredAt) {
+            if ($metaInformation['ttl'] && Carbon::now()->getTimestamp() > $expiredAt) {
                 $this->delete($key);
                 return $default;
             }

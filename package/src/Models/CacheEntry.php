@@ -6,10 +6,16 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Sopamo\ClusterCache\Database\Factories\CacheEntryFactory;
 use Sopamo\ClusterCache\Exceptions\CacheEntryValueIsOutOfMemoryException;
 use Sopamo\ClusterCache\Serialization;
 
+/**
+ * @property mixed $value
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
 class CacheEntry extends Model
 {
     use HasFactory;
@@ -36,7 +42,6 @@ class CacheEntry extends Model
             get: fn($value) => Serialization::unserialize($value),
             set: function ($value) {
                 $serializedValue = Serialization::serialize($value);
-                logger(strlen($serializedValue));
                 if (strlen($serializedValue) > self::VALUE_LENGTH_LIMIT) {
                     throw new CacheEntryValueIsOutOfMemoryException();
                 }
