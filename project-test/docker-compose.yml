@@ -10,6 +10,7 @@ services:
         image: sail-8.1/app
         extra_hosts:
             - 'host.docker.internal:host-gateway'
+        command: sh -c "php artisan clustercache:initcommunication && /start.sh"
         ports:
             - '8081:80'
             - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
@@ -39,6 +40,7 @@ services:
         image: sail-8.1/app
         extra_hosts:
             - 'host.docker.internal:host-gateway'
+        command: sh -c "php artisan clustercache:initcommunication && /start.sh"
         ports:
             - '8082:80'
             - '${VITE_PORT:-5174}:${VITE_PORT:-5173}'
