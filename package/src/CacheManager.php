@@ -27,6 +27,7 @@ class CacheManager
     public function __construct(MemoryDriver $memoryDriver)
     {
         MetaInformation::setMemoryDriver($memoryDriver->driver);
+        EventLockInformation::setMemoryDriver($memoryDriver->driver);
         $this->metaInformation = app(MetaInformation::class);
         $this->memoryDriver = $memoryDriver->driver;
         $this->eventLocker = app(EventLocker::class);
