@@ -12,11 +12,13 @@ class HostCommunicationStatus
         Host::updateOrCreate([
             'ip' => HostHelpers::getHostIp()
         ]);
-        Cache::store('clustercache')->put('clustercache_hosts', Host::all()->pluck('ip'));
+        Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip'));
+        app(HostCommunication::class)->triggerAll(Event::$allEvents['FETCH_HOSTS']);
     }
 
     public static function leave():void {
         Host::where('ip', HostHelpers::getHostIp())->delete();
-        Cache::store('clustercache')->put('clustercache_hosts', Host::all()->pluck('ip'));
+        Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip'));
+        app(HostCommunication::class)->triggerAll(Event::$allEvents['FETCH_HOSTS']);
     }
 }
