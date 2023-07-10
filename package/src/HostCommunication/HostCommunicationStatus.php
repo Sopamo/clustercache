@@ -13,12 +13,12 @@ class HostCommunicationStatus
             'ip' => HostHelpers::getHostIp()
         ]);
         Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip'));
-        app(HostCommunication::class)->triggerAll(Event::$allEvents['FETCH_HOSTS']);
+        app(HostCommunication::class)->triggerAll(Event::fromInt(Event::$allEvents['FETCH_HOSTS']));
     }
 
     public static function leave():void {
         Host::where('ip', HostHelpers::getHostIp())->delete();
         Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip'));
-        app(HostCommunication::class)->triggerAll(Event::$allEvents['FETCH_HOSTS']);
+        app(HostCommunication::class)->triggerAll(Event::fromInt(Event::$allEvents['FETCH_HOSTS']));
     }
 }

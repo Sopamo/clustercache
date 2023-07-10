@@ -11,6 +11,9 @@ class CacheKeyIsUpdatingTrigger extends Trigger implements TriggerInterface
     {
         $url =  config('clustercache.protocol') . '://' . $ip . '/clustercache/api/call-event/' . $cacheKey . '/' . Event::$allEvents['CACHE_KEY_IS_UPDATING'];
 
+        logger('$url: ' . $url);
+
+        logger('before $this->executeRequest($url): ' . $this->executeRequest($url));
         if($this->executeRequest($url) !== HostHelpers::HOST_REQUEST_RESPONSE) {
             return false;
         }

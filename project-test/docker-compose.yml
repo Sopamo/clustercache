@@ -26,11 +26,16 @@ services:
         networks:
             - sail
         depends_on:
-            - mysql
-            - redis
-            - meilisearch
-            - mailhog
-            - selenium
+            mysql:
+                condition: service_healthy
+            redis:
+                condition: service_started
+            meilisearch:
+                condition: service_started
+            mailhog:
+                condition: service_started
+            selenium:
+                condition: service_started
     clustercache2:
         build:
             context: ./docker/8.1-custom
@@ -56,11 +61,16 @@ services:
         networks:
             - sail
         depends_on:
-            - mysql
-            - redis
-            - meilisearch
-            - mailhog
-            - selenium
+            mysql:
+                condition: service_healthy
+            redis:
+                condition: service_started
+            meilisearch:
+                condition: service_started
+            mailhog:
+                condition: service_started
+            selenium:
+                condition: service_started
     mysql:
         image: 'mysql/mysql-server:8.0'
         ports:
@@ -79,7 +89,7 @@ services:
             - sail
         healthcheck:
             test: ["CMD", "mysqladmin", "ping", "-p${DB_PASSWORD}"]
-            retries: 3
+            retries: 10
             timeout: 5s
     redis:
         image: 'redis:alpine'

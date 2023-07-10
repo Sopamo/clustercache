@@ -10,7 +10,7 @@ class DBLocker
     /**
      * Timeout in seconds
      */
-    public static int $timeout = 30;
+    public static int $timeout = 5;
 
     public function acquire(string $key): void
     {

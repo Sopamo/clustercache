@@ -6,13 +6,20 @@ use App\Http\Controllers\Controller;
 use Exception;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
+use Sopamo\ClusterCache\EventLockInformation;
 use Sopamo\ClusterCache\HostCommunication\Event;
 use Sopamo\ClusterCache\HostHelpers;
 use Sopamo\ClusterCache\LockingMechanisms\EventLocker;
+use Sopamo\ClusterCache\MemoryDriver;
 use Sopamo\ClusterCache\Models\Host;
 
 class ApiRequestController extends Controller
 {
+    public function __construct()
+    {
+        EventLockInformation::setMemoryDriver(MemoryDriver::fromString(config('clustercache.driver')));
+    }
+
     public function confirmConnectionStatus(): Response
     {
         return response(HostHelpers::HOST_REQUEST_RESPONSE);

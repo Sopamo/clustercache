@@ -20,7 +20,7 @@ class EventLockInformation
 
     /**
      * @param  string  $key
-     * @return null|int
+     * @return null|array{value:int, locked_at: int}
      */
     public function get(string $key): mixed
     {
@@ -49,13 +49,13 @@ class EventLockInformation
 
     /**
      * @param  string  $key
-     * @param  int  $eventType
-     * @return int
+     * @param  array{value:int,locked_at: int}  $value
+     * @return array{value:int,locked_at: int}
      */
-    public function put(string $key, int $eventType): int
+    public function put(string $key, array $value): array
     {
         $data = $this->getAll();
-        $data[$key] = $eventType;
+        $data[$key] = $value;
         self::$memoryDriver->put(self::RESERVED_KEY, Serialization::serialize($data), self::RESERVED_LENGTH_IN_BYTES);
 
         return $data[$key];
