@@ -4,8 +4,6 @@ namespace Sopamo\ClusterCache\HostCommunication;
 
 use Illuminate\Support\Facades\Cache;
 use Sopamo\ClusterCache\HostCommunication\Triggers\CacheKeyHasUpdatedTrigger;
-use Sopamo\ClusterCache\HostCommunication\Triggers\CacheKeyIsUpdatingTrigger;
-use Sopamo\ClusterCache\HostCommunication\Triggers\CacheKeyUpdatingHasCancelledTrigger;
 use Sopamo\ClusterCache\HostCommunication\Triggers\FetchHostsTrigger;
 use Sopamo\ClusterCache\HostCommunication\Triggers\TestConnectionTrigger;
 use Sopamo\ClusterCache\HostHelpers;
@@ -43,9 +41,7 @@ class HostCommunication
         $trigger = match($event->value) {
             Event::$allEvents['TEST_CONNECTION'] => new TestConnectionTrigger(),
             Event::$allEvents['FETCH_HOSTS'] => new FetchHostsTrigger(),
-            Event::$allEvents['CACHE_KEY_IS_UPDATING'] => new CacheKeyIsUpdatingTrigger(),
             Event::$allEvents['CACHE_KEY_HAS_UPDATED'] => new CacheKeyHasUpdatedTrigger(),
-            Event::$allEvents['CACHE_KEY_UPDATING_HAS_CANCELED'] => new CacheKeyUpdatingHasCancelledTrigger(),
             default => throw new UnhandledMatchError('The event does not exist'),
         };
 

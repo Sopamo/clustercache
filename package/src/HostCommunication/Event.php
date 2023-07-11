@@ -7,11 +7,9 @@ use InvalidArgumentException;
 class Event
 {
     public static array $allEvents = [
-        'CACHE_KEY_IS_UPDATING' => 1,
-        'CACHE_KEY_HAS_UPDATED' => 2,
-        'CACHE_KEY_UPDATING_HAS_CANCELED' => 3,
-        'TEST_CONNECTION' => 4,
-        'FETCH_HOSTS' => 5,
+        'CACHE_KEY_HAS_UPDATED' => 1,
+        'TEST_CONNECTION' => 2,
+        'FETCH_HOSTS' => 3,
     ];
 
     public int $value;

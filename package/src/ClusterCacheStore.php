@@ -18,7 +18,6 @@ class ClusterCacheStore implements Store
         $this->cacheManager = app(CacheManager::class, ['memoryDriver' => $memoryDriver]);
         $this->metaInformation = app(MetaInformation::class);
         MetaInformation::setMemoryDriver($memoryDriver->driver);
-        EventLockInformation::setMemoryDriver($memoryDriver->driver);
     }
 
     public function many(array $keys): array
