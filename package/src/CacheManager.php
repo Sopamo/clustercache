@@ -39,6 +39,7 @@ class CacheManager
         }
 
         $this->dbLocker->acquire($key);
+
         try {
             $cacheEntry = CacheEntry::updateOrCreate(
                 ['key' => $key],
@@ -104,6 +105,7 @@ class CacheManager
             if (!$metaInformation) {
                 throw new NotFoundLocalCacheKeyException();
             }
+
             if ($this->memoryBlockLocker->isLocked($key)) {
                 return $default;
             }
