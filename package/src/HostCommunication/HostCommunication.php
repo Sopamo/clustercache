@@ -2,21 +2,41 @@
 
 namespace Sopamo\ClusterCache\HostCommunication;
 
+use Illuminate\Support\Facades\Cache;
+use Sopamo\ClusterCache\HostCommunication\Triggers\CacheKeyHasUpdatedTrigger;
+use Sopamo\ClusterCache\HostCommunication\Triggers\FetchHostsTrigger;
+use Sopamo\ClusterCache\HostCommunication\Triggers\TestConnectionTrigger;
+use Sopamo\ClusterCache\HostHelpers;
 use Sopamo\ClusterCache\Models\Host;
+use UnhandledMatchError;
 
 class HostCommunication
 {
     public function triggerAll(Event $event, string $cacheKey = null): void
     {
-        $hosts = Host::all();
+        $hostIps = Cache::store('clustercache')->get('clustercache_hosts');
+        if(!$hostIps) {
+            $hostIps = Host::pluck('ip');
+        }
 
-        foreach ($hosts as $host) {
-            $this->trigger($event, $host, $cacheKey);
+        foreach ($hostIps as $hostIp) {
+            if($hostIp === HostHelpers::getHostIp()) {
+                continue;
+            }
+
+            $this->trigger($event, $hostIp, $cacheKey);
         }
     }
 
-    public function trigger(Event $event, Host $host, string $cacheKey = null): void
+    public function trigger(Event $event, string $hostIp, string $cacheKey = null): void
     {
-        // TO DO
+        $trigger = match($event->value) {
+            Event::$allEvents['TEST_CONNECTION'] => new TestConnectionTrigger(),
+            Event::$allEvents['FETCH_HOSTS'] => new FetchHostsTrigger(),
+            Event::$allEvents['CACHE_KEY_HAS_UPDATED'] => new CacheKeyHasUpdatedTrigger(),
+            default => throw new UnhandledMatchError('The event does not exist'),
+        };
+
+        $trigger->handle($hostIp, $cacheKey);
     }
 }

@@ -37,5 +37,7 @@ class ClusterCacheServiceProvider extends ServiceProvider
             ], 'config');
 
         }
+
+        $this->loadRoutesFrom(__DIR__.'/../routes/api.php');
     }
 }

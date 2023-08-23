@@ -10,7 +10,6 @@ use Sopamo\ClusterCache\Exceptions\NotFoundLocalCacheKeyException;
 use Sopamo\ClusterCache\HostCommunication\Event;
 use Sopamo\ClusterCache\HostCommunication\HostCommunication;
 use Sopamo\ClusterCache\LockingMechanisms\DBLocker;
-use Sopamo\ClusterCache\LockingMechanisms\EventLocker;
 use Sopamo\ClusterCache\LockingMechanisms\MemoryBlockLocker;
 use Sopamo\ClusterCache\Models\CacheEntry;
 
@@ -18,7 +17,6 @@ class CacheManager
 {
     private MemoryDriverInterface $memoryDriver;
     private MetaInformation $metaInformation;
-    private EventLocker $eventLocker;
     private DBLocker $dbLocker;
     private MemoryBlockLocker $memoryBlockLocker;
     private HostCommunication $hostCommunication;
@@ -29,7 +27,6 @@ class CacheManager
         MetaInformation::setMemoryDriver($memoryDriver->driver);
         $this->metaInformation = app(MetaInformation::class);
         $this->memoryDriver = $memoryDriver->driver;
-        $this->eventLocker = app(EventLocker::class);
         $this->dbLocker = app(DBLocker::class);
         $this->memoryBlockLocker = app(MemoryBlockLocker::class);
         $this->hostCommunication = app(HostCommunication::class);
@@ -37,15 +34,12 @@ class CacheManager
 
     public function put(string $key, mixed $value, int $ttl = 0): bool
     {
-        if ($this->eventLocker->isLocked($key)) {
-            return false;
-        }
         if ($this->dbLocker->isLocked($key)) {
             return false;
         }
 
         $this->dbLocker->acquire($key);
-        $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_IS_UPDATING']), $key);
+
         try {
             $cacheEntry = CacheEntry::updateOrCreate(
                 ['key' => $key],
@@ -60,8 +54,6 @@ class CacheManager
 
             return true;
         } catch (CacheEntryValueIsOutOfMemoryException $e) {
-            $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_UPDATING_HAS_CANCELED']),
-                $key);
             $this->dbLocker->release($key);
 
             return false;
@@ -108,15 +100,12 @@ class CacheManager
      */
     public function get(string $key, mixed $default = null): mixed
     {
-        if ($this->eventLocker->isLocked($key)) {
-            return $default;
-        }
-
         try {
             $metaInformation = $this->metaInformation->get($key);
             if (!$metaInformation) {
                 throw new NotFoundLocalCacheKeyException();
             }
+
             if ($this->memoryBlockLocker->isLocked($key)) {
                 return $default;
             }
@@ -153,15 +142,11 @@ class CacheManager
      */
     public function delete(string $key): bool
     {
-        if ($this->eventLocker->isLocked($key)) {
-            return false;
-        }
         if ($this->dbLocker->isLocked($key)) {
             return false;
         }
 
         $this->dbLocker->acquire($key);
-        $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_IS_UPDATING']), $key);
         CacheEntry::where('key', $key)->delete();
         $metaInformation = $this->metaInformation->get($key);
         if ($metaInformation) {
@@ -170,6 +155,16 @@ class CacheManager
         $this->metaInformation->delete($key);
         $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
         $this->dbLocker->release($key);
+
+        return true;
+    }
+
+    public function deleteFromLocalCache(string $key): bool{
+        $metaInformation = $this->metaInformation->get($key);
+        if ($metaInformation) {
+            $this->memoryDriver->delete($metaInformation['memory_key'], $metaInformation['length']);
+        }
+        $this->metaInformation->delete($key);
 
         return true;
     }

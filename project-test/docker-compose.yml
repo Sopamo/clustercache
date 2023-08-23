@@ -10,6 +10,7 @@ services:
         image: sail-8.1/app
         extra_hosts:
             - 'host.docker.internal:host-gateway'
+        command: sh -c "php artisan clustercache:initcommunication && /start.sh"
         ports:
             - '8081:80'
             - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
@@ -25,11 +26,16 @@ services:
         networks:
             - sail
         depends_on:
-            - mysql
-            - redis
-            - meilisearch
-            - mailhog
-            - selenium
+            mysql:
+                condition: service_healthy
+            redis:
+                condition: service_started
+            meilisearch:
+                condition: service_started
+            mailhog:
+                condition: service_started
+            selenium:
+                condition: service_started
     clustercache2:
         build:
             context: ./docker/8.1-custom
@@ -39,6 +45,7 @@ services:
         image: sail-8.1/app
         extra_hosts:
             - 'host.docker.internal:host-gateway'
+        command: sh -c "php artisan clustercache:initcommunication && /start.sh"
         ports:
             - '8082:80'
             - '${VITE_PORT:-5174}:${VITE_PORT:-5173}'
@@ -54,11 +61,16 @@ services:
         networks:
             - sail
         depends_on:
-            - mysql
-            - redis
-            - meilisearch
-            - mailhog
-            - selenium
+            mysql:
+                condition: service_healthy
+            redis:
+                condition: service_started
+            meilisearch:
+                condition: service_started
+            mailhog:
+                condition: service_started
+            selenium:
+                condition: service_started
     mysql:
         image: 'mysql/mysql-server:8.0'
         ports:
@@ -77,7 +89,7 @@ services:
             - sail
         healthcheck:
             test: ["CMD", "mysqladmin", "ping", "-p${DB_PASSWORD}"]
-            retries: 3
+            retries: 10
             timeout: 5s
     redis:
         image: 'redis:alpine'
