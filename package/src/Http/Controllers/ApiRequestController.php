@@ -10,7 +10,6 @@ use Sopamo\ClusterCache\CacheManager;
 use Sopamo\ClusterCache\HostCommunication\Event;
 use Sopamo\ClusterCache\HostHelpers;
 use Sopamo\ClusterCache\MemoryDriver;
-use Sopamo\ClusterCache\MetaInformation;
 use Sopamo\ClusterCache\Models\Host;
 
 class ApiRequestController extends Controller

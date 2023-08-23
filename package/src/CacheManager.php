@@ -140,27 +140,19 @@ class CacheManager
      */
     public function delete(string $key): bool
     {
-        logger('($this->dbLocker->isLocked($key)'. $this->dbLocker->isLocked($key));
         if ($this->dbLocker->isLocked($key)) {
             return false;
         }
 
-        logger('before dbLocker->acquire($key)');
         $this->dbLocker->acquire($key);
-        logger('after dbLocker->acquire($key)');
-        logger('before delete from DB');
         CacheEntry::where('key', $key)->delete();
         $metaInformation = $this->metaInformation->get($key);
         if ($metaInformation) {
             $this->memoryDriver->delete($metaInformation['memory_key'], $metaInformation['length']);
         }
         $this->metaInformation->delete($key);
-        logger('before $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents[\'CACHE_KEY_HAS_UPDATED\']). Cache key: ' . $key);
         $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
-        logger('after $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents[\'CACHE_KEY_HAS_UPDATED\']). Cache key: ' . $key);
-        logger('before dbLocker->release($key)');
         $this->dbLocker->release($key);
-        logger('after dbLocker->release($key)');
 
         return true;
     }
