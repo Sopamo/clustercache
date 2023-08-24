@@ -21,4 +21,16 @@ class HostCommunicationStatus
         Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip'));
         app(HostCommunication::class)->triggerAll(Event::fromInt(Event::$allEvents['FETCH_HOSTS']));
     }
+
+    public static function testConnections():void {
+        $hostCommunication =  app(HostCommunication::class);
+        foreach ($hostCommunication->getHostIps() as $hostIp) {
+            if ($hostIp === HostHelpers::getHostIp()) {
+                continue;
+            }
+
+            logger("$hostIp: ");
+            logger($hostCommunication->trigger(Event::fromInt(Event::$allEvents['TEST_CONNECTION']), $hostIp));
+        }
+    }
 }

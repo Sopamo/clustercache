@@ -3,6 +3,7 @@
 namespace Sopamo\ClusterCache;
 
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Psr\Container\NotFoundExceptionInterface;
 use Sopamo\ClusterCache\Drivers\MemoryDriverInterface;
 use Sopamo\ClusterCache\Exceptions\CacheEntryValueIsOutOfMemoryException;
@@ -20,6 +21,7 @@ class CacheManager
     private DBLocker $dbLocker;
     private MemoryBlockLocker $memoryBlockLocker;
     private HostCommunication $hostCommunication;
+    private array $missBroadcastingForSpecialCacheKeys;
 
 
     public function __construct(MemoryDriver $memoryDriver)
@@ -30,6 +32,8 @@ class CacheManager
         $this->dbLocker = app(DBLocker::class);
         $this->memoryBlockLocker = app(MemoryBlockLocker::class);
         $this->hostCommunication = app(HostCommunication::class);
+
+        $this->missBroadcastingForSpecialCacheKeys = [config('clustercache.prefix') . ':clustercache_hosts'];
     }
 
     public function put(string $key, mixed $value, int $ttl = 0): bool
@@ -48,7 +52,12 @@ class CacheManager
                     'ttl' => $ttl,
                 ]
             );
-            $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
+
+            logger("Key: $key");
+            logger("missBroadcastingForSpecialCacheKeys: " . json_encode($this->missBroadcastingForSpecialCacheKeys));
+            if(!in_array($key, $this->missBroadcastingForSpecialCacheKeys)) {
+                $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
+            }
             $this->putIntoLocalCache($cacheEntry);
             $this->dbLocker->release($key);
 
@@ -120,6 +129,7 @@ class CacheManager
             if (!$cachedValue) {
                 throw new NotFoundLocalCacheKeyException();
             }
+            logger("$key comes from the local cache");
             $cachedValue = Serialization::unserialize($cachedValue);
         } catch (NotFoundLocalCacheKeyException) {
             $cacheEntry = CacheEntry::where('key', $key)->first();

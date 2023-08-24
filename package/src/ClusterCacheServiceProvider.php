@@ -21,15 +21,20 @@ class ClusterCacheServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        if (!class_exists('CreateHostsTable')) {
-            $this->publishes([
-                __DIR__.'/../database/migrations/cache_entries_table.php.stub' => database_path('migrations/'.date('Y_m_d_His',
-                        time()).'_cache_entries_table.php'),
-                __DIR__.'/../database/migrations/create_hosts_table.php.stub' => database_path('migrations/'.date('Y_m_d_His',
-                        time()).'_create_hosts_table.php'),
-                // you can add any number of migrations here
-            ], 'migrations');
+        $publishMigrations = [];
+        if (!class_exists('CreateCacheEntriesTable')) {
+            $publishMigrations[__DIR__.'/../database/migrations/cache_entries_table.php.stub'] = database_path('migrations/'.date('Y_m_d_His',
+                        time()).'_cache_entries_table.php');
         }
+        if (!class_exists('CreateHostsTable')) {
+            $publishMigrations[__DIR__.'/../database/migrations/create_hosts_table.php.stub'] = database_path('migrations/'.date('Y_m_d_His',
+                    time()).'_create_hosts_table.php');
+        }
+        if (!class_exists('CreateDisconnectedHostsTable')) {
+            $publishMigrations[__DIR__.'/../database/migrations/create_disconnected_hosts_table.php.stub'] = database_path('migrations/'.date('Y_m_d_His',
+                    time()).'_create_disconnected_hosts_table.php');
+        }
+        $this->publishes($publishMigrations, 'migrations');
 
         if ($this->app->runningInConsole()) {
             $this->publishes([

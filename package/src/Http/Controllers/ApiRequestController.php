@@ -17,7 +17,7 @@ class ApiRequestController extends Controller
     protected CacheManager $cacheManager;
     public function __construct()
     {
-        $this->cacheManager = new CacheManager(MemoryDriver::fromString(config('clustercache.driver')));
+        $this->cacheManager = app(CacheManager::class, ['memoryDriver' => MemoryDriver::fromString(config('clustercache.driver'))]);
     }
 
     public function confirmConnectionStatus(): Response
@@ -27,6 +27,8 @@ class ApiRequestController extends Controller
 
     public function fetchHosts(): Response
     {
+        logger('Fetching hosts in ' . HostHelpers::getHostIp());
+        logger(json_encode(Host::pluck('ip')));
         Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip'));
         return response(HostHelpers::HOST_REQUEST_RESPONSE);
     }
