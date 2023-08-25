@@ -40,3 +40,14 @@ CacheManager::delete('cache key');
 $value = Cache::store('clustercache')->get('foo');
 Cache::store('clustercache')->put('foo', 'test');
 $value = Cache::store('clustercache')->get('foo');
+
+
+$driver = Sopamo\ClusterCache\MemoryDriver::fromString('SHMOP');
+$cacheManager = new Sopamo\ClusterCache\CacheManager($driver);
+$cacheManager->put('hosts', \Sopamo\ClusterCache\Models\Host::limit(2)->pluck('ip'));
+$cacheManager->get('hosts');
+$cacheManager->put('hosts', \Sopamo\ClusterCache\Models\Host::pluck('ip'));
+$cacheManager->get('hosts');
+
+$cacheManager->put('clusterCache_:clustercache_hosts', \Sopamo\ClusterCache\Models\Host::pluck('ip'));
+$cacheManager->get('clusterCache_:clustercache_hosts');

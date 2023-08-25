@@ -53,16 +53,18 @@ class CacheManager
                 ]
             );
 
-            logger("Key: $key");
-            logger("missBroadcastingForSpecialCacheKeys: " . json_encode($this->missBroadcastingForSpecialCacheKeys));
+            //logger("Key: $key");
+            //logger("missBroadcastingForSpecialCacheKeys: " . json_encode($this->missBroadcastingForSpecialCacheKeys));
             if(!in_array($key, $this->missBroadcastingForSpecialCacheKeys)) {
                 $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
             }
             $this->putIntoLocalCache($cacheEntry);
             $this->dbLocker->release($key);
 
+            logger("putting successfully");
             return true;
         } catch (CacheEntryValueIsOutOfMemoryException $e) {
+            logger($e->getMessage());
             $this->dbLocker->release($key);
 
             return false;
@@ -75,6 +77,8 @@ class CacheManager
         $valueLength = strlen($value);
 
         $metaInformation = $this->metaInformation->get($cacheEntry->key);
+        logger('$metaInformation');
+        logger(json_encode($metaInformation));
         if (!$metaInformation) {
             $memoryKey = $this->memoryDriver->generateMemoryKey();
             $metaInformation = [
@@ -84,6 +88,11 @@ class CacheManager
             ];
         }
         $metaInformation['is_being_written'] = true;
+
+        logger('$cacheEntry->value');
+        logger(json_encode($cacheEntry->value));
+        logger('$valueLength: ' . $valueLength);
+        logger('$metaInformation[\'length\']: ' . $metaInformation['length']);
 
         if ($valueLength > $metaInformation['length']) {
             // if the new length is greater than the old length,
@@ -127,10 +136,12 @@ class CacheManager
 
             $cachedValue = $this->memoryDriver->get($metaInformation['memory_key'], $metaInformation['length']);
             if (!$cachedValue) {
+                logger("$key is empty in local storage");
                 throw new NotFoundLocalCacheKeyException();
             }
-            logger("$key comes from the local cache");
             $cachedValue = Serialization::unserialize($cachedValue);
+            logger("$key comes from the local cache");
+            //logger(json_encode($cachedValue));
         } catch (NotFoundLocalCacheKeyException) {
             $cacheEntry = CacheEntry::where('key', $key)->first();
 
@@ -163,7 +174,11 @@ class CacheManager
             $this->memoryDriver->delete($metaInformation['memory_key'], $metaInformation['length']);
         }
         $this->metaInformation->delete($key);
-        $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
+
+        if(!in_array($key, $this->missBroadcastingForSpecialCacheKeys)) {
+            $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $key);
+        }
+
         $this->dbLocker->release($key);
 
         return true;

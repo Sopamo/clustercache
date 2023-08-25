@@ -29,7 +29,9 @@ class ApiRequestController extends Controller
     {
         logger('Fetching hosts in ' . HostHelpers::getHostIp());
         logger(json_encode(Host::pluck('ip')));
-        Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip'));
+        logger('Putting data into local storage: ' . Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip')));
+        logger('Fetching hosts in ' . HostHelpers::getHostIp() . ' from local storage');
+        logger(json_encode(Cache::store('clustercache')->get('clustercache_hosts')));
         return response(HostHelpers::HOST_REQUEST_RESPONSE);
     }
 
