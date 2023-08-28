@@ -27,7 +27,7 @@ services:
             - sail
         healthcheck:
             test: ["CMD", "wget", "--no-verbose", "--spider",  "http://clustercache1/clustercache/api/connection-status"]
-            retries: 3
+            retries: 5
             timeout: 5s
         depends_on:
             mysql:
@@ -66,7 +66,7 @@ services:
             - sail
         healthcheck:
             test: ["CMD", "wget", "--no-verbose", "--spider",  "http://clustercache2/clustercache/api/connection-status"]
-            retries: 3
+            retries: 5
             timeout: 5s
         depends_on:
             mysql:
@@ -107,7 +107,7 @@ services:
             - sail
         healthcheck:
             test: ["CMD", "wget", "--no-verbose", "--spider",  "http://clustercache3/clustercache/api/connection-status"]
-            retries: 3
+            retries: 5
             timeout: 5s
         depends_on:
             mysql:

@@ -34,6 +34,10 @@ class ShmopDriver implements MemoryDriverInterface
 
             return true;
         } catch (Exception $e) {
+
+//            logger("Putting Exception: " . $e->getMessage());
+//            logger("Putting Exception Trace: " . $e->getTraceAsString());
+//            logger("$memoryKey: " . $memoryKey);
             return false;
         }
     }
@@ -51,9 +55,8 @@ class ShmopDriver implements MemoryDriverInterface
             $memoryKey = intval($memoryKey, 16);
         }
 
-        logger("ShmopConnectionMode: $mode->value");
-
         $shmop = shmop_open($memoryKey, $mode->value, 0666, $length + self::METADATA_LENGTH_IN_BYTES);
+        logger("ShmopConnectionMode: $mode->value");
         if (!$shmop) {
             throw new MemoryBlockDoesntExistException('the memory block "'.$memoryKey.'" doesn\'t exist');
         }
