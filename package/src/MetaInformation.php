@@ -25,8 +25,8 @@ class MetaInformation
     public function get(string $key): mixed
     {
         $data = $this->getAll();
-        logger("data from MetaInformation for '$key'");
-        logger(json_encode($data));
+        //logger("data from MetaInformation for '$key'");
+        //logger(json_encode($data));
         if (isset($data[$key])) {
             return $data[$key];
         }

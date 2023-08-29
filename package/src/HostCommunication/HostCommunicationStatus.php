@@ -12,10 +12,10 @@ class HostCommunicationStatus
         Host::updateOrCreate([
             'ip' => HostHelpers::getHostIp()
         ]);
-        logger('Putting cache in host ' . HostHelpers::getHostIp() . ': ' . Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip')));
+        //logger('Putting cache in host ' . HostHelpers::getHostIp() . ': ' . Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip')));
         //Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip'));
-        logger('Fetching hosts in init() in ' . HostHelpers::getHostIp() . ' from local storage');
-        logger(json_encode(Cache::store('clustercache')->get('clustercache_hosts')));
+        //logger('Fetching hosts in init() in ' . HostHelpers::getHostIp() . ' from local storage');
+        //logger(json_encode(Cache::store('clustercache')->get('clustercache_hosts')));
 
         app(HostCommunication::class)->triggerAll(Event::fromInt(Event::$allEvents['FETCH_HOSTS']));
     }

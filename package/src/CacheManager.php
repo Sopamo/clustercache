@@ -70,7 +70,7 @@ class CacheManager
 
             $this->dbLocker->release($key);
 
-            logger("putting successfully");
+            //logger("putting successfully");
             return true;
         } catch (CacheEntryValueIsOutOfMemoryException $e) {
             logger($e->getMessage());
@@ -86,8 +86,8 @@ class CacheManager
         $valueLength = strlen($value);
 
         $metaInformation = $this->metaInformation->get($cacheEntry->key);
-        logger('$metaInformation');
-        logger(json_encode($metaInformation));
+        //logger('$metaInformation');
+        //logger(json_encode($metaInformation));
         if (!$metaInformation) {
             $metaInformation = [
                 'memory_key' => $this->memoryDriver->generateMemoryKey(),
@@ -105,22 +105,22 @@ class CacheManager
 
         $updatedMetaInformation = [...$metaInformation];
 
-        logger('$cacheEntry->value');
-        logger(json_encode($cacheEntry->value));
-        logger('$valueLength: ' . $valueLength);
-        logger('$metaInformation[\'length\']: ' . $metaInformation['length']);
+        //logger('$cacheEntry->value');
+        //logger(json_encode($cacheEntry->value));
+        //logger('$valueLength: ' . $valueLength);
+        //logger('$metaInformation[\'length\']: ' . $metaInformation['length']);
 
         if ($valueLength > $metaInformation['length']) {
             // if the new length is greater than the old length,
             // the memory block has to be deleted and created again
-            logger("Delete '$cacheEntry->key': " . $this->memoryDriver->delete($metaInformation['memory_key'], $metaInformation['length']));
+            //logger("Delete '$cacheEntry->key': " . $this->memoryDriver->delete($metaInformation['memory_key'], $metaInformation['length']));
             $updatedMetaInformation['length'] = $valueLength;
             $updatedMetaInformation['memory_key'] = $this->memoryDriver->generateMemoryKey();
         }
 
         $isPut = $this->memoryDriver->put($metaInformation['memory_key'], $value, $metaInformation['length']);
 
-        logger("Putting '$cacheEntry->key' into local cache: " . $this->memoryDriver->put($metaInformation['memory_key'], $value, $metaInformation['length']));
+        //logger("Putting '$cacheEntry->key' into local cache: " . $this->memoryDriver->put($metaInformation['memory_key'], $value, $metaInformation['length']));
 
         $updatedMetaInformation['is_being_written'] = false;
 
@@ -164,11 +164,11 @@ class CacheManager
 
             $cachedValue = $this->memoryDriver->get($metaInformation['memory_key'], $metaInformation['length']);
             if (!$cachedValue) {
-                logger("$key is empty in local storage");
+                //logger("$key is empty in local storage");
                 throw new NotFoundLocalCacheKeyException();
             }
             $cachedValue = Serialization::unserialize($cachedValue);
-            logger("$key comes from the local cache");
+            //logger("$key comes from the local cache");
             //logger(json_encode($cachedValue));
         } catch (NotFoundLocalCacheKeyException) {
             $cacheEntry = CacheEntry::where('key', $key)->first();

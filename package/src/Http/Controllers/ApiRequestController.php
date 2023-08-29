@@ -8,6 +8,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 use Sopamo\ClusterCache\CacheManager;
 use Sopamo\ClusterCache\HostCommunication\Event;
+use Sopamo\ClusterCache\HostCommunication\HostCommunication;
 use Sopamo\ClusterCache\HostHelpers;
 use Sopamo\ClusterCache\MemoryDriver;
 use Sopamo\ClusterCache\Models\Host;
@@ -27,11 +28,23 @@ class ApiRequestController extends Controller
 
     public function fetchHosts(): Response
     {
-        logger('Fetching hosts in ' . HostHelpers::getHostIp());
-        logger(json_encode(Host::pluck('ip')));
-        logger('Putting data into local storage: ' . Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip')));
-        logger('Fetching hosts in ' . HostHelpers::getHostIp() . ' from local storage');
-        logger(json_encode(Cache::store('clustercache')->get('clustercache_hosts')));
+        //logger('Fetching hosts in ' . HostHelpers::getHostIp());
+        //logger(json_encode(Host::pluck('ip')));
+        Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip'));
+        //logger('Putting data into local storage: ' . Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip')));
+        //logger('Fetching hosts in ' . HostHelpers::getHostIp() . ' from local storage');
+        //logger(json_encode(Cache::store('clustercache')->get('clustercache_hosts')));
+
+        return response(HostHelpers::HOST_REQUEST_RESPONSE);
+    }
+
+    public function testConnectionToHost(string $hostIp, HostCommunication $hostCommunication): Response
+    {
+        logger('testing hosts in ' . HostHelpers::getHostIp());
+        logger('Host to test: ' . $hostIp);
+
+        $hostCommunication->trigger(Event::fromInt(Event::$allEvents['TEST_CONNECTION']), $hostIp);
+
         return response(HostHelpers::HOST_REQUEST_RESPONSE);
     }
 

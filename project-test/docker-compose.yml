@@ -24,7 +24,8 @@ services:
             - '../:/var/www/package'
             - /var/www/package/project-test
         networks:
-            - sail
+            sail:
+                ipv4_address: 10.5.0.7
         healthcheck:
             test: ["CMD", "wget", "--no-verbose", "--spider",  "http://clustercache1/clustercache/api/connection-status"]
             retries: 5
@@ -63,7 +64,8 @@ services:
             - '../:/var/www/package'
             - /var/www/package/project-test
         networks:
-            - sail
+            sail:
+                ipv4_address: 10.5.0.8
         healthcheck:
             test: ["CMD", "wget", "--no-verbose", "--spider",  "http://clustercache2/clustercache/api/connection-status"]
             retries: 5
@@ -104,7 +106,8 @@ services:
             - '../:/var/www/package'
             - /var/www/package/project-test
         networks:
-            - sail
+            sail:
+                ipv4_address: 10.5.0.9
         healthcheck:
             test: ["CMD", "wget", "--no-verbose", "--spider",  "http://clustercache3/clustercache/api/connection-status"]
             retries: 5
@@ -184,6 +187,10 @@ services:
 networks:
     sail:
         driver: bridge
+        ipam:
+            config:
+                - subnet: 10.5.0.0/28
+                  gateway: 10.5.0.1
 volumes:
     sail-mysql:
         driver: local

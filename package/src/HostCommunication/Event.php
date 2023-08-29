@@ -10,6 +10,7 @@ class Event
         'CACHE_KEY_HAS_UPDATED' => 1,
         'TEST_CONNECTION' => 2,
         'FETCH_HOSTS' => 3,
+        'TEST_CONNECTION_TO_HOST' => 4,
     ];
 
     public int $value;
