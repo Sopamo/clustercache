@@ -17,8 +17,6 @@ class HostCommunication
 {
     public function triggerAll(Event $event, string $cacheKey = null): void
     {
-        $disconnectedHostIps = [];
-
         foreach ($this->getHostIps() as $hostIp) {
             if($hostIp === HostHelpers::getHostIp()) {
                 continue;
@@ -31,7 +29,6 @@ class HostCommunication
             logger("Trigger result: $trigger");
 
             if(!$trigger) {
-                $this->markConnectionAsDisconnected(HostHelpers::getHostIp(), $hostIp);
                 $this->testConnectionFromEchHostToTheHost($hostIp);
             }
         }
@@ -47,7 +44,15 @@ class HostCommunication
             default => throw new UnhandledMatchError('The event does not exist'),
         };
 
-        return $trigger->handle($hostIp, $cacheKey, $optionalData);
+        $triggerSuccessfully =  $trigger->handle($hostIp, $cacheKey, $optionalData);
+
+        if($triggerSuccessfully) {
+            $this->unmarkConnectionAsDisconnected(HostHelpers::getHostIp(), $hostIp);
+        } else {
+            $this->markConnectionAsDisconnected(HostHelpers::getHostIp(), $hostIp);
+        }
+
+        return $triggerSuccessfully;
     }
 
     public function getHostIps():array {
@@ -70,6 +75,13 @@ class HostCommunication
         ]);
     }
 
+    protected function unmarkConnectionAsDisconnected(string $from, string $to):void {
+        logger("unmark Connection. From: $from, to: $to");
+        DisconnectedHost::where('from', $from)
+            ->where('to', $to)
+            ->delete();
+    }
+
     protected function testConnectionFromEchHostToTheHost(string $hostIpToTest):void {
         foreach ($this->getHostIps() as $hostIp) {
             if ($hostIp === HostHelpers::getHostIp() || $hostIp === $hostIpToTest) {
@@ -83,5 +95,9 @@ class HostCommunication
             logger("Trigger test result: $trigger");
         }
         logger('trigger testConnection to all!');
+    }
+
+    protected function removeDisconnectedHosts(): void {
+        $allHostIps = $this->getHostIps();
     }
 }
