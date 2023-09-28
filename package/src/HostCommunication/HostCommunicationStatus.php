@@ -4,6 +4,7 @@ namespace Sopamo\ClusterCache\HostCommunication;
 
 use Illuminate\Support\Facades\Cache;
 use Sopamo\ClusterCache\HostHelpers;
+use Sopamo\ClusterCache\Models\DisconnectedHost;
 use Sopamo\ClusterCache\Models\Host;
 
 class HostCommunicationStatus
@@ -22,6 +23,7 @@ class HostCommunicationStatus
 
     public static function leave():void {
         Host::where('ip', HostHelpers::getHostIp())->delete();
+        DisconnectedHost::where('from', HostHelpers::getHostIp())->orWhere('to', HostHelpers::getHostIp())->delete();
         Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip'));
         app(HostCommunication::class)->triggerAll(Event::fromInt(Event::$allEvents['FETCH_HOSTS']));
     }

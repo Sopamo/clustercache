@@ -4,6 +4,7 @@ namespace Sopamo\ClusterCache\HostCommunication;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Sopamo\ClusterCache\HostCommunication\Triggers\CacheKeyHasUpdatedTrigger;
 use Sopamo\ClusterCache\HostCommunication\Triggers\FetchHostsTrigger;
 use Sopamo\ClusterCache\HostCommunication\Triggers\TestConnectionToHostTrigger;
@@ -24,12 +25,12 @@ class HostCommunication
 
             logger(" Event: '$event->value', from: " . HostHelpers::getHostIp() .", to: $hostIp");
 
-            $trigger = $this->trigger($event, $hostIp, $cacheKey);
+            $triggerSuccessfully = $this->trigger($event, $hostIp, $cacheKey);
 
-            logger("Trigger result: $trigger");
+            logger("Trigger result: $triggerSuccessfully");
 
-            if(!$trigger) {
-                $this->testConnectionFromEchHostToTheHost($hostIp);
+            if(!$triggerSuccessfully) {
+                $this->testConnectionFromEchHostToTargetHost($hostIp);
             }
         }
     }
@@ -68,8 +69,24 @@ class HostCommunication
         return $hostIps;
     }
 
+    protected function testConnectionFromEchHostToTargetHost(string $targetHostIp):void {
+        foreach ($this->getHostIps() as $hostIp) {
+            if ($hostIp === HostHelpers::getHostIp() || $hostIp === $targetHostIp) {
+                continue;
+            }
+
+            logger(' Trigger Test Connection in host: ' . $hostIp);
+
+            $trigger = $this->trigger(Event::fromInt(Event::$allEvents['TEST_CONNECTION_TO_HOST']), $hostIp, null, ['hostIp' => $targetHostIp]);
+
+            logger("Trigger test result: $trigger");
+        }
+        logger('trigger testConnection to all!');
+        $this->removeDisconnectedHosts();
+    }
+
     protected function markConnectionAsDisconnected(string $from, string $to):void {
-         DisconnectedHost::updateOrCreate([
+        DisconnectedHost::updateOrCreate([
             'from' => $from,
             'to' => $to,
         ]);
@@ -82,22 +99,25 @@ class HostCommunication
             ->delete();
     }
 
-    protected function testConnectionFromEchHostToTheHost(string $hostIpToTest):void {
-        foreach ($this->getHostIps() as $hostIp) {
-            if ($hostIp === HostHelpers::getHostIp() || $hostIp === $hostIpToTest) {
-                continue;
-            }
-
-            logger(' Trigger Test Connection in host: ' . $hostIp);
-
-            $trigger = $this->trigger(Event::fromInt(Event::$allEvents['TEST_CONNECTION_TO_HOST']), $hostIp, null, ['hostIp' => $hostIpToTest]);
-
-            logger("Trigger test result: $trigger");
-        }
-        logger('trigger testConnection to all!');
-    }
-
     protected function removeDisconnectedHosts(): void {
         $allHostIps = $this->getHostIps();
+        $hostCount = count($allHostIps);
+        $disconnectedHosts = DisconnectedHost::select('to', DB::raw('COUNT(*) as count'))
+            ->groupBy('to')
+            ->get()
+            ->keyBy('to');
+
+        $hostsToRemove = [];
+
+        foreach ($allHostIps as $hostIp) {
+            $count = $disconnectedHosts->get($hostIp)?->count ?? 0;
+            if($count / $hostCount > 0.5) {
+                $hostsToRemove[] = $hostIp;
+            }
+        }
+
+        Host::whereIn('ip', $hostsToRemove)->delete();
+        DisconnectedHost::whereIn('from', $hostsToRemove)->orWhereIn('to', $hostsToRemove)->delete();
+        Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip'));
     }
 }

@@ -1,3 +1,4 @@
+<?php
 $memoryKey = ShmopDriver::generateMemoryKey();
 ShmopDriver::put($memoryKey, 'test', 4 + ShmopDriver::METADATA_LENGTH_IN_BYTES);
 ShmopDriver::get($memoryKey, 4 + ShmopDriver::METADATA_LENGTH_IN_BYTES);
@@ -53,3 +54,13 @@ $cacheManager->put('clusterCache_:clustercache_hosts', \Sopamo\ClusterCache\Mode
 $cacheManager->get('clusterCache_:clustercache_hosts');
 
 Cache::store('clustercache')->get('clustercache_hosts');
+
+$start = microtime(true);
+Cache::store('clustercache')->put('foo', 'test5');
+echo microtime(true) - $start;
+echo 'done';
+
+$start = microtime(true);
+Cache::store('clustercache')->get('foo');
+echo microtime(true) - $start;
+echo 'done';
