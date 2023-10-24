@@ -153,27 +153,32 @@ class CacheManager
             }
 
             if ($this->memoryBlockLocker->isLocked($key)) {
+                logger('memoryBlockLocker->isLocked');
                 return $default;
             }
 
             $expiredAt = $metaInformation['updated_at'] + $metaInformation['ttl'];
             if ($metaInformation['ttl'] && Carbon::now()->getTimestamp() > $expiredAt) {
+                logger('cache is expired');
                 $this->delete($key);
                 return $default;
             }
 
             $cachedValue = $this->memoryDriver->get($metaInformation['memory_key'], $metaInformation['length']);
             if (!$cachedValue) {
-                //logger("$key is empty in local storage");
+                logger("$key is empty in local storage");
                 throw new NotFoundLocalCacheKeyException();
             }
             $cachedValue = Serialization::unserialize($cachedValue);
-            //logger("$key comes from the local cache");
-            //logger(json_encode($cachedValue));
+            logger("$key comes from the local cache");
+            logger(json_encode($cachedValue));
         } catch (NotFoundLocalCacheKeyException) {
             $cacheEntry = CacheEntry::where('key', $key)->first();
 
             if (!$cacheEntry) {
+                logger(json_encode(CacheEntry::all()));
+                logger(CacheEntry::getConnectionResolver()->getDefaultConnection());
+                logger("$key does not exist in DB");
                 $this->metaInformation->delete($key);
                 return $default;
             }

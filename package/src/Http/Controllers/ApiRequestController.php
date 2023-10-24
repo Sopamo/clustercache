@@ -4,11 +4,14 @@ namespace Sopamo\ClusterCache\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Exception;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Sopamo\ClusterCache\CacheManager;
 use Sopamo\ClusterCache\HostCommunication\Event;
 use Sopamo\ClusterCache\HostCommunication\HostCommunication;
+use Sopamo\ClusterCache\HostCommunication\Triggers\Trigger;
 use Sopamo\ClusterCache\HostHelpers;
 use Sopamo\ClusterCache\MemoryDriver;
 use Sopamo\ClusterCache\Models\Host;
@@ -16,8 +19,18 @@ use Sopamo\ClusterCache\Models\Host;
 class ApiRequestController extends Controller
 {
     protected CacheManager $cacheManager;
-    public function __construct()
+    public function __construct(Request $request)
     {
+        if($request->hasHeader('Test-Mode')) {
+            // the "Test-Mode" header is sent by requests from tests.
+            // We need to switch the database for Tests to avoid breaking of the prod database
+            DB::setDefaultConnection('testing');
+            // we need to keep broadcasting to other hosts that is the test mode
+            Trigger::setRequestHeaders([
+                'Test-Mode: true',
+            ]);
+        }
+
         $this->cacheManager = app(CacheManager::class, ['memoryDriver' => MemoryDriver::fromString(config('clustercache.driver'))]);
     }
 
@@ -38,7 +51,7 @@ class ApiRequestController extends Controller
         return response(HostHelpers::HOST_REQUEST_RESPONSE);
     }
 
-    public function testConnectionToHost(string $hostIp, HostCommunication $hostCommunication): Response
+    public function testConnectionToHost(string $hostIp,  HostCommunication $hostCommunication): Response
     {
         logger('testing hosts in ' . HostHelpers::getHostIp());
         logger('Host to test: ' . $hostIp);

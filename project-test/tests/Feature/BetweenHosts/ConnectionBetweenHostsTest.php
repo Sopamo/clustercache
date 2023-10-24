@@ -6,8 +6,6 @@ use Sopamo\ClusterCache\HostCommunication\Triggers\TestConnectionTrigger;
 
 class ConnectionBetweenHostsTest extends BetweenHostsTestCase
 {
-
-
     /** @test */
     public function can_connect_to_all_hosts() {
         $testConnectionTrigger = app(TestConnectionTrigger::class);
