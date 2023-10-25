@@ -7,7 +7,7 @@ Route::prefix('clustercache/api')->group(function () {
 
 
     Route::prefix('test')->group(function () {
-        Route::get('/get/{key}',
-            '\Sopamo\ClusterCache\Http\Controllers\TestApiRequestController@getCache');
+        Route::get('/get/{key}', '\Sopamo\ClusterCache\Http\Controllers\TestApiRequestController@getCache');
+        Route::post('/put/{key}', '\Sopamo\ClusterCache\Http\Controllers\TestApiRequestController@putCache');
     });
 });
