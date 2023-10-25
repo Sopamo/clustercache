@@ -10,7 +10,7 @@ use Sopamo\ClusterCache\MemoryDriver;
 use Sopamo\ClusterCache\Models\Host;
 use Tests\TestCase;
 
-class CacheManagerTest extends TestCase
+class CacheManagerTest extends SingleHostTestCase
 {
     use RefreshDatabase;
 

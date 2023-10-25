@@ -4,10 +4,13 @@ namespace App\Console\Commands;
 
 use App\Services\DBLockerWithLongLocking;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Sopamo\ClusterCache\CacheManager;
+use Sopamo\ClusterCache\HostHelpers;
 use Sopamo\ClusterCache\LockingMechanisms\DBLocker;
 use Sopamo\ClusterCache\MemoryDriver;
+use Sopamo\ClusterCache\Models\Host;
 
 class TestBackground extends Command
 {
@@ -26,6 +29,10 @@ class TestBackground extends Command
         $value = $this->argument('value');
 
         DB::setDefaultConnection('testing');
+
+        Host::updateOrCreate([
+            'ip' => HostHelpers::getHostIp()
+        ]);
 
         $cacheManager = app(CacheManager::class, ['memoryDriver' => MemoryDriver::fromString('SHMOP')]);
 

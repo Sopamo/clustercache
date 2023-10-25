@@ -13,7 +13,6 @@ class HostCommunicationStatusTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected string $store = 'clustercache';
     protected string $key = 'clustercache_hosts';
     /**
      * @test
@@ -56,7 +55,6 @@ class HostCommunicationStatusTest extends TestCase
         $this->assertEquals(collect([HostHelpers::getHostIp()]), Cache::store($this->store)->get($this->key));
 
         HostCommunicationStatus::leave();
-        Cache::store($this->store)->put($this->key, Host::pluck('ip'));
 
         $this->assertCount(0, Host::all());
         $this->assertEquals(collect(), Cache::store($this->store)->get($this->key));

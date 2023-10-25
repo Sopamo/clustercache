@@ -9,8 +9,9 @@ use Sopamo\ClusterCache\CacheManager;
 use Sopamo\ClusterCache\MemoryDriver;
 use Sopamo\ClusterCache\Models\Host;
 use Tests\TestCase;
+use Tests\Unit\SingleHostTestCase;
 
-class CacheManagerBetweenProcessesTest extends TestCase
+class CacheManagerBetweenProcessesTest extends SingleHostTestCase
 {
     protected CacheManager $cacheManager;
     protected string $cacheKey = 'key';

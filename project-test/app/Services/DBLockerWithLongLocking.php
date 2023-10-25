@@ -9,6 +9,6 @@ class DBLockerWithLongLocking extends DBLocker
     public function acquire(string $key): void
     {
         parent::acquire($key);
-        sleep(2);
+        sleep(3);
     }
 }
