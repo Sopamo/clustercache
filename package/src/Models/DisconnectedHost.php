@@ -6,15 +6,16 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
-use Sopamo\ClusterCache\Database\Factories\HostFactory;
+use Sopamo\ClusterCache\Database\Factories\DisconnectedHostFactory;
 
 /**
  * @property int $id
- * @property string $ip
+ * @property string $from
+ * @property string $to
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-class Host extends Model
+class DisconnectedHost extends Model
 {
     use HasFactory;
 
@@ -22,6 +23,6 @@ class Host extends Model
 
     protected static function newFactory(): Factory
     {
-        return HostFactory::new();
+        return DisconnectedHostFactory::new();
     }
 }

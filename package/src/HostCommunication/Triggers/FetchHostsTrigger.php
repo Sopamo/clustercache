@@ -6,7 +6,7 @@ use Sopamo\ClusterCache\HostHelpers;
 
 class FetchHostsTrigger extends Trigger implements TriggerInterface
 {
-    public function handle(string $ip, string $cacheKey = null): bool
+    public function handle(string $ip, string $cacheKey = null, array $optionalData = []): bool
     {
         $url =  config('clustercache.protocol') . '://' . $ip . '/clustercache/api/fetch-hosts';
 

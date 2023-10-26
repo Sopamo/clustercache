@@ -2,6 +2,7 @@
 
 namespace Sopamo\ClusterCache\LockingMechanisms;
 
+use Illuminate\Support\Carbon;
 use Sopamo\ClusterCache\Models\CacheEntry;
 use Sopamo\ClusterCache\TimeHelpers;
 
@@ -22,7 +23,11 @@ class DBLocker
             $cacheEntry->value = '';
         }
 
-        $cacheEntry->locked_at = TimeHelpers::getNowFromDB();
+        $nowFromDB = Carbon::createFromFormat('Y-m-d H:i:s',TimeHelpers::getNowFromDB());
+
+        assert($nowFromDB, 'Current time is unknown');
+
+        $cacheEntry->locked_at = $nowFromDB;
         $cacheEntry->save();
     }
 

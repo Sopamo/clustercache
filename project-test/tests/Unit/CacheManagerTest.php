@@ -24,6 +24,7 @@ class CacheManagerTest extends TestCase
         $this->cacheManager = app(CacheManager::class, ['memoryDriver' => MemoryDriver::fromString('SHMOP')]);
         $this->value = Host::factory(500)->create();
 
+        $this->cacheManager->delete('clustercache_hosts');
     }
 
     /** @test */
@@ -39,6 +40,23 @@ class CacheManagerTest extends TestCase
         $this->cacheManager->delete($this->cacheKey);
 
         $this->assertNull($this->cacheManager->get($this->cacheKey));
+
+        $this->cacheManager->put($this->cacheKey, $this->value);
+
+        $this->assertCount($this->value->count(), $this->cacheManager->get($this->cacheKey));
+    }
+
+    /** @test */
+    public function update_data() {
+        $this->cacheManager->delete($this->cacheKey);
+
+        $this->assertNull($this->cacheManager->get($this->cacheKey));
+
+        $this->cacheManager->put($this->cacheKey, $this->value);
+
+        $this->assertCount($this->value->count(), $this->cacheManager->get($this->cacheKey));
+
+        $this->value = Host::factory(800)->create();
 
         $this->cacheManager->put($this->cacheKey, $this->value);
 

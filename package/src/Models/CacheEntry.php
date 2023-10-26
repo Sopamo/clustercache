@@ -12,7 +12,11 @@ use Sopamo\ClusterCache\Exceptions\CacheEntryValueIsOutOfMemoryException;
 use Sopamo\ClusterCache\Serialization;
 
 /**
+ * @property int $id
+ * @property string $key
  * @property mixed $value
+ * @property int $ttl
+ * @property Carbon|null $locked_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */

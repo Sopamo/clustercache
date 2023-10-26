@@ -1,3 +1,4 @@
+<?php
 $memoryKey = ShmopDriver::generateMemoryKey();
 ShmopDriver::put($memoryKey, 'test', 4 + ShmopDriver::METADATA_LENGTH_IN_BYTES);
 ShmopDriver::get($memoryKey, 4 + ShmopDriver::METADATA_LENGTH_IN_BYTES);
@@ -38,5 +39,28 @@ CacheManager::get('cache key');
 CacheManager::delete('cache key');
 
 $value = Cache::store('clustercache')->get('foo');
-Cache::store('clustercache')->put('foo', 'test');
+Cache::store('clustercache')->put('foo', 'test5');
 $value = Cache::store('clustercache')->get('foo');
+
+
+$driver = Sopamo\ClusterCache\MemoryDriver::fromString('SHMOP');
+$cacheManager = new Sopamo\ClusterCache\CacheManager($driver);
+$cacheManager->put('hosts', \Sopamo\ClusterCache\Models\Host::limit(2)->pluck('ip'));
+$cacheManager->get('hosts');
+$cacheManager->put('hosts', \Sopamo\ClusterCache\Models\Host::pluck('ip'));
+$cacheManager->get('hosts');
+
+$cacheManager->put('clusterCache_:clustercache_hosts', \Sopamo\ClusterCache\Models\Host::pluck('ip'));
+$cacheManager->get('clusterCache_:clustercache_hosts');
+
+Cache::store('clustercache')->get('clustercache_hosts');
+
+$start = microtime(true);
+Cache::store('clustercache')->put('foo', 'test5');
+echo microtime(true) - $start;
+echo 'done';
+
+$start = microtime(true);
+Cache::store('clustercache')->get('foo');
+echo microtime(true) - $start;
+echo 'done';

@@ -25,12 +25,14 @@ class HostCommunicationStatusTest extends TestCase
         $this->assertNull(Cache::store($this->store)->get($this->key));
 
         HostCommunicationStatus::init();
+        Cache::store($this->store)->put($this->key, Host::pluck('ip'));
 
         $this->assertCount(1, Host::all());
         $this->assertEquals(HostHelpers::getHostIp(), Host::first()->ip);
         $this->assertEquals(collect([HostHelpers::getHostIp()]), Cache::store($this->store)->get($this->key));
 
         HostCommunicationStatus::init();
+        Cache::store($this->store)->put($this->key, Host::pluck('ip'));
 
         $this->assertCount(1, Host::all());
         $this->assertEquals(HostHelpers::getHostIp(), Host::first()->ip);
@@ -47,12 +49,14 @@ class HostCommunicationStatusTest extends TestCase
         $this->assertNull(Cache::store($this->store)->get($this->key));
 
         HostCommunicationStatus::init();
+        Cache::store($this->store)->put($this->key, Host::pluck('ip'));
 
         $this->assertCount(1, Host::all());
         $this->assertEquals(HostHelpers::getHostIp(), Host::first()->ip);
         $this->assertEquals(collect([HostHelpers::getHostIp()]), Cache::store($this->store)->get($this->key));
 
         HostCommunicationStatus::leave();
+        Cache::store($this->store)->put($this->key, Host::pluck('ip'));
 
         $this->assertCount(0, Host::all());
         $this->assertEquals(collect(), Cache::store($this->store)->get($this->key));
