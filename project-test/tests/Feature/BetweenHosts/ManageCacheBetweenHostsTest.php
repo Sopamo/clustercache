@@ -5,6 +5,7 @@ namespace Tests\Feature\BetweenHosts;
 use Illuminate\Support\Facades\Cache;
 use Sopamo\ClusterCache\Exceptions\PutCacheException;
 use Sopamo\ClusterCache\HostCommunication\Triggers\TestConnectionTrigger;
+use Sopamo\ClusterCache\HostHelpers;
 use Sopamo\ClusterCache\Models\Host;
 
 class ManageCacheBetweenHostsTest extends BetweenHostsTestCase
@@ -54,9 +55,33 @@ class ManageCacheBetweenHostsTest extends BetweenHostsTestCase
     }
 
     /** @test */
-    public function put_cache_by_disconnected_host() {
+    public function put_cache_by_host_marked_as_disconnected() {
         $this->expectException(PutCacheException::class);
         Cache::store($this->store)->put('key', 'value');
+    }
+
+    /** @test */
+    public function put_cache_by_host_which_has_not_connection_to_at_least_half_of_hosts() {
+        $host = new Host();
+        $host->ip = self::HOST_CLUSTERCACHE1;
+        $host->save();
+        $host = new Host();
+        $host->ip = self::HOST_CLUSTERCACHE2;
+        $host->save();
+
+        $host = new Host();
+        $host->ip = self::HOST_DISCONNECTED_HOST1;
+        $host->save();
+
+        $host = new Host();
+        $host->ip = self::HOST_DISCONNECTED_HOST2;
+        $host->save();
+
+        Cache::store($this->store)->put('clustercache_hosts', Host::pluck('ip'));
+
+        $this->expectException(PutCacheException::class);
+        Cache::store($this->store)->put('key', 'value');
+        $this->assertNull(Host::where('ip', '!', HostHelpers::getHostIp())->first());
     }
 
     private function saveInformationAboutAllConnectedHosts():void {
@@ -73,7 +98,6 @@ class ManageCacheBetweenHostsTest extends BetweenHostsTestCase
         $host->save();
 
         Cache::store($this->store)->put('clustercache_hosts', Host::pluck('ip'));
-
     }
 
     private function getTestApiUrl(string $host): string

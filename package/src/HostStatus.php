@@ -1,13 +1,14 @@
 <?php
 
-namespace Sopamo\ClusterCache\HostCommunication;
+namespace Sopamo\ClusterCache;
 
 use Illuminate\Support\Facades\Cache;
-use Sopamo\ClusterCache\HostHelpers;
+use Sopamo\ClusterCache\HostCommunication\Event;
+use Sopamo\ClusterCache\HostCommunication\HostCommunication;
 use Sopamo\ClusterCache\Models\DisconnectedHost;
 use Sopamo\ClusterCache\Models\Host;
 
-class HostCommunicationStatus
+class HostStatus
 {
     public static function init():void {
         Host::updateOrCreate([

@@ -3,10 +3,10 @@
 namespace Sopamo\ClusterCache;
 
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Cache;
 use Psr\Container\NotFoundExceptionInterface;
 use Sopamo\ClusterCache\Drivers\MemoryDriverInterface;
 use Sopamo\ClusterCache\Exceptions\CacheEntryValueIsOutOfMemoryException;
+use Sopamo\ClusterCache\Exceptions\DisconnectedWithAtLeastHalfOfHostsException;
 use Sopamo\ClusterCache\Exceptions\NotFoundLocalCacheKeyException;
 use Sopamo\ClusterCache\Exceptions\PutCacheException;
 use Sopamo\ClusterCache\HostCommunication\Event;
@@ -44,7 +44,17 @@ class CacheManager
     public function put(string $key, mixed $value, int $ttl = 0): bool
     {
         if(!Host::where('ip', HostHelpers::getHostIp())->exists()) {
-            throw new PutCacheException('Host is disconnected');
+            throw new PutCacheException('Host is marked as disconnected');
+        }
+
+        try{
+            // It doesn't make sense to broadcast events like updating the internal cached data - for example "clustercache_hosts"
+            if(!in_array($key, $this->missBroadcastingForSpecialCacheKeys)) {
+                $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['TEST_CONNECTION']), $key);
+            }
+        } catch (DisconnectedWithAtLeastHalfOfHostsException) {
+            HostStatus::leave();
+            throw new PutCacheException('Host is disconnected with at least half of hosts');
         }
 
         if ($this->dbLocker->isLocked($key)) {
