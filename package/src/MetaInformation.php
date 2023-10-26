@@ -15,7 +15,7 @@ class MetaInformation
 
     public static function setMemoryDriver(MemoryDriverInterface $memoryDriver): void
     {
-        self::$memoryDriver = $memoryDriver;
+        SelectedMemoryDriver::$memoryDriver->driver = $memoryDriver;
     }
 
     /**
@@ -35,7 +35,7 @@ class MetaInformation
 
     private function getAll(): array
     {
-        $data = self::$memoryDriver->get(self::RESERVED_KEY, self::RESERVED_LENGTH_IN_BYTES);
+        $data = SelectedMemoryDriver::$memoryDriver->driver->get(self::RESERVED_KEY, self::RESERVED_LENGTH_IN_BYTES);
         if (!$data) {
             return [];
         }
@@ -46,7 +46,7 @@ class MetaInformation
     {
         $data = $this->getAll();
         unset($data[$key]);
-        self::$memoryDriver->put(self::RESERVED_KEY, Serialization::serialize($data), self::RESERVED_LENGTH_IN_BYTES);
+        SelectedMemoryDriver::$memoryDriver->driver->put(self::RESERVED_KEY, Serialization::serialize($data), self::RESERVED_LENGTH_IN_BYTES);
     }
 
     /**
@@ -58,7 +58,7 @@ class MetaInformation
     {
         $data = $this->getAll();
         $data[$key] = $value;
-        self::$memoryDriver->put(self::RESERVED_KEY, Serialization::serialize($data), self::RESERVED_LENGTH_IN_BYTES);
+        SelectedMemoryDriver::$memoryDriver->driver->put(self::RESERVED_KEY, Serialization::serialize($data), self::RESERVED_LENGTH_IN_BYTES);
 
         return $data[$key];
     }

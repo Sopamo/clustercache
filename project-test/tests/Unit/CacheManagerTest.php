@@ -77,19 +77,4 @@ class CacheManagerTest extends SingleHostTestCase
 
         $this->assertNull($this->cacheManager->get($this->cacheKey));
     }
-
-    /** @test */
-    public function delete_data_from_local_cache() {
-        $this->cacheManager->delete($this->cacheKey);
-
-        $this->assertNull($this->cacheManager->get($this->cacheKey));
-
-        $this->cacheManager->put($this->cacheKey, $this->value);
-
-        $this->assertCount($this->value->count(), $this->cacheManager->get($this->cacheKey));
-
-        $this->cacheManager->deleteFromLocalCache($this->cacheKey);
-
-        $this->assertCount($this->value->count(), $this->cacheManager->get($this->cacheKey));
-    }
 }

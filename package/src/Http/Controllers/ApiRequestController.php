@@ -8,17 +8,17 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Sopamo\ClusterCache\CacheManager;
 use Sopamo\ClusterCache\HostCommunication\Event;
 use Sopamo\ClusterCache\HostCommunication\HostCommunication;
 use Sopamo\ClusterCache\HostCommunication\Triggers\Trigger;
 use Sopamo\ClusterCache\HostHelpers;
+use Sopamo\ClusterCache\LocalCacheManager;
 use Sopamo\ClusterCache\MemoryDriver;
 use Sopamo\ClusterCache\Models\Host;
 
 class ApiRequestController extends Controller
 {
-    protected CacheManager $cacheManager;
+    protected LocalCacheManager $localCacheManager;
     public function __construct(Request $request)
     {
         if($request->hasHeader('Test-Mode')) {
@@ -31,7 +31,7 @@ class ApiRequestController extends Controller
             ]);
         }
 
-        $this->cacheManager = app(CacheManager::class, ['memoryDriver' => MemoryDriver::fromString(config('clustercache.driver'))]);
+        $this->localCacheManager = app(LocalCacheManager::class);
     }
 
     public function confirmConnectionStatus(): Response
@@ -69,7 +69,7 @@ class ApiRequestController extends Controller
 
         switch ($eventType) {
             case Event::$allEvents['CACHE_KEY_HAS_UPDATED']:
-                $this->cacheManager->deleteFromLocalCache($key);
+                $this->localCacheManager->delete($key);
                 break;
             default:
                 throw new Exception('This event does not exist');

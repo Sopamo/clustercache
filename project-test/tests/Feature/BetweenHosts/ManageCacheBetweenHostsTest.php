@@ -18,6 +18,8 @@ class ManageCacheBetweenHostsTest extends BetweenHostsTestCase
         $cacheKey = 'key';
         $cacheValue = 'value';
 
+        logger(json_encode(Host::all()));
+
         Cache::store($this->store)->put($cacheKey, $cacheValue);
 
         $this->assertEquals($cacheValue, Cache::store($this->store)->get($cacheKey));
