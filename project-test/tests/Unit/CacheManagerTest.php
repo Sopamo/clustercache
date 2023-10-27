@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Sopamo\ClusterCache\CacheKey;
 use Sopamo\ClusterCache\CacheManager;
 use Sopamo\ClusterCache\MemoryDriver;
 use Sopamo\ClusterCache\Models\Host;
@@ -23,8 +24,6 @@ class CacheManagerTest extends SingleHostTestCase
 
         $this->cacheManager = app(CacheManager::class, ['memoryDriver' => MemoryDriver::fromString('SHMOP')]);
         $this->value = Host::factory(500)->create();
-
-        $this->cacheManager->delete('clustercache_hosts');
     }
 
     /** @test */
@@ -32,6 +31,13 @@ class CacheManagerTest extends SingleHostTestCase
         $this->cacheManager->delete($this->cacheKey);
 
         $this->assertTrue($this->cacheManager->put($this->cacheKey, $this->value));
+
+    }
+
+    /** @test */
+    public function put_data_with_not_allowed_key() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->cacheManager->put(CacheKey::NOT_ALLOWED_KEYS[0], $this->value);
 
     }
 

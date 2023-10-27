@@ -4,6 +4,7 @@ namespace Tests\Unit\HostCommunication;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Sopamo\ClusterCache\CachedHosts;
 use Sopamo\ClusterCache\HostHelpers;
 use Sopamo\ClusterCache\HostStatus;
 use Sopamo\ClusterCache\Models\Host;
@@ -13,50 +14,50 @@ class HostCommunicationStatusTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected string $key = 'clustercache_hosts';
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        Host::query()->delete();
+
+        CachedHosts::refresh();
+    }
     /**
      * @test
      */
     public function init_works():void{
-        Cache::store($this->store)->delete($this->key);
-
         $this->assertCount(0, Host::all());
-        $this->assertNull(Cache::store($this->store)->get($this->key));
+        $this->assertCount(0, CachedHosts::get());
 
         HostStatus::init();
-        Cache::store($this->store)->put($this->key, Host::pluck('ip'));
 
         $this->assertCount(1, Host::all());
         $this->assertEquals(HostHelpers::getHostIp(), Host::first()->ip);
-        $this->assertEquals(collect([HostHelpers::getHostIp()]), Cache::store($this->store)->get($this->key));
+        $this->assertEquals([HostHelpers::getHostIp()], CachedHosts::get());
 
         HostStatus::init();
-        Cache::store($this->store)->put($this->key, Host::pluck('ip'));
 
         $this->assertCount(1, Host::all());
         $this->assertEquals(HostHelpers::getHostIp(), Host::first()->ip);
-        $this->assertEquals(collect([HostHelpers::getHostIp()]), Cache::store($this->store)->get($this->key));
+        $this->assertEquals([HostHelpers::getHostIp()], CachedHosts::get());
     }
 
     /**
      * @test
      */
     public function leave_works():void{
-        Cache::store($this->store)->delete($this->key);
-
         $this->assertCount(0, Host::all());
-        $this->assertNull(Cache::store($this->store)->get($this->key));
+        $this->assertCount(0, CachedHosts::get());
 
         HostStatus::init();
-        Cache::store($this->store)->put($this->key, Host::pluck('ip'));
 
         $this->assertCount(1, Host::all());
         $this->assertEquals(HostHelpers::getHostIp(), Host::first()->ip);
-        $this->assertEquals(collect([HostHelpers::getHostIp()]), Cache::store($this->store)->get($this->key));
+        $this->assertEquals([HostHelpers::getHostIp()], CachedHosts::get());
 
         HostStatus::leave();
 
         $this->assertCount(0, Host::all());
-        $this->assertEquals(collect(), Cache::store($this->store)->get($this->key));
+        $this->assertCount(0, CachedHosts::get());
     }
 }

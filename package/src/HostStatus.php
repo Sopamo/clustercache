@@ -14,6 +14,7 @@ class HostStatus
         Host::updateOrCreate([
             'ip' => HostHelpers::getHostIp()
         ]);
+        CachedHosts::refresh();
         //logger('Putting cache in host ' . HostHelpers::getHostIp() . ': ' . Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip')));
         //Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip'));
         //logger('Fetching hosts in init() in ' . HostHelpers::getHostIp() . ' from local storage');
@@ -23,15 +24,15 @@ class HostStatus
     }
 
     public static function leave():void {
-        Cache::store('clustercache')->put('clustercache_hosts', Host::where('ip', '!=', HostHelpers::getHostIp())->pluck('ip'));
         Host::where('ip', HostHelpers::getHostIp())->delete();
+        CachedHosts::refresh();
         DisconnectedHost::where('from', HostHelpers::getHostIp())->orWhere('to', HostHelpers::getHostIp())->delete();
         app(HostCommunication::class)->triggerAll(Event::fromInt(Event::$allEvents['FETCH_HOSTS']));
     }
 
     public static function testConnections():void {
         $hostCommunication =  app(HostCommunication::class);
-        foreach ($hostCommunication->getHostIps() as $hostIp) {
+        foreach (CachedHosts::get() as $hostIp) {
             if ($hostIp === HostHelpers::getHostIp()) {
                 continue;
             }

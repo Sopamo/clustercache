@@ -3,8 +3,12 @@
 namespace Sopamo\ClusterCache;
 
 use Illuminate\Support\Carbon;
-use Sopamo\ClusterCache\Drivers\MemoryDriverInterface;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use Sopamo\ClusterCache\Exceptions\ExpiredLocalCacheKeyException;
+use Sopamo\ClusterCache\Exceptions\MemoryBlockIsLockedException;
 use Sopamo\ClusterCache\Exceptions\NotFoundLocalCacheKeyException;
+use Sopamo\ClusterCache\LockingMechanisms\MemoryBlockLocker;
 
 class LocalCacheManager
 {
@@ -13,23 +17,32 @@ class LocalCacheManager
     {
         $this->metaInformation = app(MetaInformation::class);
     }
-    public function get(string $key, mixed $default = null): mixed
+
+    /**
+     * @throws NotFoundLocalCacheKeyException
+     * @throws NotFoundExceptionInterface
+     * @throws ExpiredLocalCacheKeyException
+     * @throws ContainerExceptionInterface
+     * @throws MemoryBlockIsLockedException
+     */
+    public function get(string $key): mixed
     {
+        $memoryBlockLocker = app(MemoryBlockLocker::class);
+
         $metaInformation = $this->metaInformation->get($key);
         if (!$metaInformation) {
             throw new NotFoundLocalCacheKeyException();
         }
 
-        if ($this->memoryBlockLocker->isLocked($key)) {
+        if ($memoryBlockLocker->isLocked($key)) {
             logger('memoryBlockLocker->isLocked');
-            return $default;
+            throw new MemoryBlockIsLockedException("The memory block for '$key' is locked");
         }
 
         $expiredAt = $metaInformation['updated_at'] + $metaInformation['ttl'];
         if ($metaInformation['ttl'] && Carbon::now()->getTimestamp() > $expiredAt) {
             logger('cache is expired');
-            $this->delete($key);
-            return $default;
+            throw new ExpiredLocalCacheKeyException("The '$key' cache is expired");
         }
 
         $cachedValue = SelectedMemoryDriver::$memoryDriver->driver->get($metaInformation['memory_key'], $metaInformation['length']);
@@ -37,7 +50,8 @@ class LocalCacheManager
             logger("$key is empty in local storage");
             throw new NotFoundLocalCacheKeyException();
         }
-        $cachedValue = Serialization::unserialize($cachedValue);
+
+        return Serialization::unserialize($cachedValue);
     }
 
     public function put(string $key, mixed $value, int $updatedAt, int $ttl = 0): bool {

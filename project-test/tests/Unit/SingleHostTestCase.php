@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Sopamo\ClusterCache\CachedHosts;
 use Sopamo\ClusterCache\HostCommunication\Triggers\Trigger;
 use Sopamo\ClusterCache\HostHelpers;
 use Sopamo\ClusterCache\Models\Host;
@@ -20,7 +21,7 @@ class SingleHostTestCase extends TestCase
             'ip' => HostHelpers::getHostIp()
         ]);
 
-        Cache::store($this->store)->put('clustercache_hosts', Host::pluck('ip'));
+        CachedHosts::refresh();
     }
 
 }
