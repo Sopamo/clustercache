@@ -19,7 +19,7 @@ class CacheManagerBetweenProcessesTest extends SingleHostTestCase
     {
         parent::setUp();
 
-        $this->cacheManager = app(CacheManager::class, ['memoryDriver' => MemoryDriver::fromString('SHMOP')]);
+        $this->cacheManager = app(CacheManager::class);
         $this->value = Host::factory(500)->create();
 
     }
