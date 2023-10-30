@@ -37,7 +37,7 @@ class CacheManagerTest extends SingleHostTestCase
     /** @test */
     public function put_data_with_not_allowed_key() {
         $this->expectException(\InvalidArgumentException::class);
-        $this->cacheManager->put(CacheKey::NOT_ALLOWED_KEYS[0], $this->value);
+        $this->cacheManager->put(CacheKey::INTERNAL_USED_KEYS['hosts'], $this->value);
 
     }
 
@@ -50,6 +50,18 @@ class CacheManagerTest extends SingleHostTestCase
         $this->cacheManager->put($this->cacheKey, $this->value);
 
         $this->assertCount($this->value->count(), $this->cacheManager->get($this->cacheKey));
+    }
+
+    /** @test */
+    public function get_expired_data() {
+        $this->cacheManager->delete($this->cacheKey);
+
+        $this->assertNull($this->cacheManager->get($this->cacheKey));
+
+        $this->cacheManager->put($this->cacheKey, $this->value, 1);
+        sleep(2);
+
+        $this->assertNull($this->cacheManager->get($this->cacheKey));
     }
 
     /** @test */

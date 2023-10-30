@@ -2,7 +2,8 @@
 
 namespace Sopamo\ClusterCache;
 
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Carbon;
+use Sopamo\ClusterCache\Exceptions\NotFoundLocalCacheKeyException;
 use Sopamo\ClusterCache\HostCommunication\Event;
 use Sopamo\ClusterCache\HostCommunication\HostCommunication;
 use Sopamo\ClusterCache\Models\DisconnectedHost;
@@ -28,6 +29,24 @@ class HostStatus
         CachedHosts::refresh();
         DisconnectedHost::where('from', HostHelpers::getHostIp())->orWhere('to', HostHelpers::getHostIp())->delete();
         app(HostCommunication::class)->triggerAll(Event::fromInt(Event::$allEvents['FETCH_HOSTS']));
+    }
+
+    public static function isConnected(): bool {
+        /** @var LocalCacheManager $localCacheManager */
+        $localCacheManager = app(LocalCacheManager::class);
+
+        try{
+            return !!$localCacheManager->get(CacheKey::INTERNAL_USED_KEYS['isConnected']);
+        }  catch (NotFoundLocalCacheKeyException) {
+            return true;
+        }
+    }
+
+    public static function setConnectionStatus( bool $isConnected): void {
+        /** @var LocalCacheManager $localCacheManager */
+        $localCacheManager = app(LocalCacheManager::class);
+
+        $localCacheManager->put(CacheKey::INTERNAL_USED_KEYS['isConnected'], $isConnected, Carbon::now()->getTimestamp());
     }
 
     public static function testConnections():void {

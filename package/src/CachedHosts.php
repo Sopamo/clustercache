@@ -8,14 +8,12 @@ use Sopamo\ClusterCache\Models\Host;
 
 class CachedHosts
 {
-    private static string $key = 'hosts';
-
     public static function get():array {
         /** @var LocalCacheManager $localCacheManager */
         $localCacheManager = app(LocalCacheManager::class);
 
         try {
-            return $localCacheManager->get(self::$key);
+            return $localCacheManager->get(CacheKey::INTERNAL_USED_KEYS['hosts']);
         } catch (NotFoundLocalCacheKeyException) {
             return self::updateCache();
         }
@@ -31,7 +29,7 @@ class CachedHosts
         $localCacheManager = app(LocalCacheManager::class);
 
         $hosts = Host::pluck('ip')->toArray();
-        $localCacheManager->put(self::$key, $hosts, Carbon::now()->getTimestamp());
+        $localCacheManager->put(CacheKey::INTERNAL_USED_KEYS['hosts'], $hosts, Carbon::now()->getTimestamp());
 
         return $hosts;
     }

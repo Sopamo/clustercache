@@ -4,5 +4,8 @@ namespace Sopamo\ClusterCache;
 
 class CacheKey
 {
-    const NOT_ALLOWED_KEYS = ['hosts'];
+    const INTERNAL_USED_KEYS = [
+        'hosts' => 'clustercache_hosts',
+        'isConnected' => 'clustercache_isConnected',
+    ];
 }

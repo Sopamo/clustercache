@@ -18,13 +18,11 @@ use Sopamo\ClusterCache\Models\Host;
 class CacheManager
 {
     private LocalCacheManager $localCacheManager;
-    private MetaInformation $metaInformation;
     private DBLocker $dbLocker;
     private HostCommunication $hostCommunication;
 
     public function __construct()
     {
-        $this->metaInformation = app(MetaInformation::class);
         $this->localCacheManager = app(LocalCacheManager::class);
         $this->dbLocker = app(DBLocker::class);
         $this->hostCommunication = app(HostCommunication::class);
@@ -35,7 +33,7 @@ class CacheManager
      */
     public function put(string $key, mixed $value, int $ttl = 0): bool
     {
-        if(in_array($key, CacheKey::NOT_ALLOWED_KEYS)) {
+        if(in_array($key, CacheKey::INTERNAL_USED_KEYS)) {
             throw new InvalidArgumentException("The key '$key' is not allowed");
         }
 
@@ -96,21 +94,31 @@ class CacheManager
      */
     public function get(string $key, mixed $default = null): mixed
     {
+        if(!HostStatus::isConnected()) {
+            if(config('clustercache.disconnected_mode' === 'db')) {
+                $cacheEntry = CacheEntry::where('key', $key)->first();
+            }
+        }
         try {
             return $this->localCacheManager->get($key);
         } catch (ExpiredLocalCacheKeyException) {
-            $this->delete($key);
+            $this->localCacheManager->delete($key);
             return $default;
         } catch (MemoryBlockIsLockedException) {
             return $default;
         } catch (NotFoundLocalCacheKeyException) {
+            /** @var CacheEntry $cacheEntry */
             $cacheEntry = CacheEntry::where('key', $key)->first();
 
             if (!$cacheEntry) {
                 logger(json_encode(CacheEntry::all()));
                 logger(CacheEntry::getConnectionResolver()->getDefaultConnection());
                 logger("$key does not exist in DB");
-                $this->metaInformation->delete($key);
+                $this->localCacheManager->delete($key);
+                return $default;
+            }
+
+            if($cacheEntry->isExpired()) {
                 return $default;
             }
 

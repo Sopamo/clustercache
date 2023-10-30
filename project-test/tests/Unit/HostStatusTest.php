@@ -1,16 +1,15 @@
 <?php
 
-namespace Tests\Unit\HostCommunication;
+namespace Tests\Unit;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Cache;
 use Sopamo\ClusterCache\CachedHosts;
 use Sopamo\ClusterCache\HostHelpers;
 use Sopamo\ClusterCache\HostStatus;
 use Sopamo\ClusterCache\Models\Host;
 use Tests\TestCase;
 
-class HostCommunicationStatusTest extends TestCase
+class HostStatusTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -59,5 +58,25 @@ class HostCommunicationStatusTest extends TestCase
 
         $this->assertCount(0, Host::all());
         $this->assertCount(0, CachedHosts::get());
+    }
+
+    /**
+     * @test
+     */
+    public function host_is_connected():void{
+        $this->assertTrue(HostStatus::isConnected());
+
+        HostStatus::setConnectionStatus(true);
+
+        $this->assertTrue(HostStatus::isConnected());
+    }
+
+    /**
+     * @test
+     */
+    public function host_is_disconnected():void{
+        HostStatus::setConnectionStatus(false);
+
+        $this->assertFalse(HostStatus::isConnected());
     }
 }
