@@ -5,6 +5,7 @@ namespace Sopamo\ClusterCache\HostCommunication;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Sopamo\ClusterCache\CachedHosts;
 use Sopamo\ClusterCache\Exceptions\DisconnectedWithAtLeastHalfOfHostsException;
 use Sopamo\ClusterCache\HostCommunication\Triggers\CacheKeyHasUpdatedTrigger;
 use Sopamo\ClusterCache\HostCommunication\Triggers\FetchHostsTrigger;
@@ -24,7 +25,7 @@ class HostCommunication
     {
         $disconnectedHostCount = 0;
 
-        foreach ($this->getHostIps() as $hostIp) {
+        foreach (CachedHosts::get() as $hostIp) {
             if($hostIp === HostHelpers::getHostIp()) {
                 continue;
             }
@@ -77,21 +78,8 @@ class HostCommunication
         return $triggerSuccessfully;
     }
 
-    public function getHostIps():array {
-        $hostIps = Cache::store('clustercache')->get('clustercache_hosts');
-        if(!$hostIps) {
-            $hostIps = Host::pluck('ip');
-        }
-
-        if($hostIps instanceof Collection) {
-            return $hostIps->toArray();
-        }
-
-        return $hostIps;
-    }
-
     protected function testConnectionFromEchHostToTargetHost(string $targetHostIp):void {
-        foreach ($this->getHostIps() as $hostIp) {
+        foreach (CachedHosts::get() as $hostIp) {
             if ($hostIp === HostHelpers::getHostIp() || $hostIp === $targetHostIp) {
                 continue;
             }
@@ -121,7 +109,7 @@ class HostCommunication
     }
 
     protected function removeDisconnectedHosts(): void {
-        $allHostIps = $this->getHostIps();
+        $allHostIps = CachedHosts::get();
         $hostCount = count($allHostIps);
         $disconnectedHosts = DisconnectedHost::select('to', DB::raw('COUNT(*) as count'))
             ->groupBy('to')

@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Sopamo\ClusterCache\CacheKey;
 use Sopamo\ClusterCache\CacheManager;
 use Sopamo\ClusterCache\MemoryDriver;
 use Sopamo\ClusterCache\Models\Host;
@@ -21,10 +22,8 @@ class CacheManagerTest extends SingleHostTestCase
     {
         parent::setUp();
 
-        $this->cacheManager = app(CacheManager::class, ['memoryDriver' => MemoryDriver::fromString('SHMOP')]);
+        $this->cacheManager = app(CacheManager::class);
         $this->value = Host::factory(500)->create();
-
-        $this->cacheManager->delete('clustercache_hosts');
     }
 
     /** @test */
@@ -32,6 +31,13 @@ class CacheManagerTest extends SingleHostTestCase
         $this->cacheManager->delete($this->cacheKey);
 
         $this->assertTrue($this->cacheManager->put($this->cacheKey, $this->value));
+
+    }
+
+    /** @test */
+    public function put_data_with_not_allowed_key() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->cacheManager->put(CacheKey::NOT_ALLOWED_KEYS[0], $this->value);
 
     }
 
@@ -76,20 +82,5 @@ class CacheManagerTest extends SingleHostTestCase
         $this->cacheManager->delete($this->cacheKey);
 
         $this->assertNull($this->cacheManager->get($this->cacheKey));
-    }
-
-    /** @test */
-    public function delete_data_from_local_cache() {
-        $this->cacheManager->delete($this->cacheKey);
-
-        $this->assertNull($this->cacheManager->get($this->cacheKey));
-
-        $this->cacheManager->put($this->cacheKey, $this->value);
-
-        $this->assertCount($this->value->count(), $this->cacheManager->get($this->cacheKey));
-
-        $this->cacheManager->deleteFromLocalCache($this->cacheKey);
-
-        $this->assertCount($this->value->count(), $this->cacheManager->get($this->cacheKey));
     }
 }

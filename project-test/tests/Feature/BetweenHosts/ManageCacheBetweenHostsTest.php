@@ -3,6 +3,7 @@
 namespace Tests\Feature\BetweenHosts;
 
 use Illuminate\Support\Facades\Cache;
+use Sopamo\ClusterCache\CachedHosts;
 use Sopamo\ClusterCache\Exceptions\PutCacheException;
 use Sopamo\ClusterCache\HostCommunication\Triggers\TestConnectionTrigger;
 use Sopamo\ClusterCache\HostHelpers;
@@ -17,6 +18,8 @@ class ManageCacheBetweenHostsTest extends BetweenHostsTestCase
 
         $cacheKey = 'key';
         $cacheValue = 'value';
+
+        logger(json_encode(Host::all()));
 
         Cache::store($this->store)->put($cacheKey, $cacheValue);
 
@@ -77,7 +80,7 @@ class ManageCacheBetweenHostsTest extends BetweenHostsTestCase
         $host->ip = self::HOST_DISCONNECTED_HOST2;
         $host->save();
 
-        Cache::store($this->store)->put('clustercache_hosts', Host::pluck('ip'));
+        CachedHosts::refresh();
 
         $this->expectException(PutCacheException::class);
         Cache::store($this->store)->put('key', 'value');
@@ -97,7 +100,7 @@ class ManageCacheBetweenHostsTest extends BetweenHostsTestCase
         $host->ip = self::HOST_CLUSTERCACHE3;
         $host->save();
 
-        Cache::store($this->store)->put('clustercache_hosts', Host::pluck('ip'));
+        CachedHosts::refresh();
     }
 
     private function getTestApiUrl(string $host): string

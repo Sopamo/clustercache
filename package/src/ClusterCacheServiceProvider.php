@@ -12,9 +12,9 @@ class ClusterCacheServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/config.php', 'clustercache');
 
         $this->app->booting(function () {
+            SelectedMemoryDriver::$memoryDriver = MemoryDriver::fromString(config('clustercache.driver'));
             Cache::extend('clustercache', function () {
-                return Cache::repository(new ClusterCacheStore(MemoryDriver::fromString(config('clustercache.driver')),
-                    config('clustercache.prefix')));
+                return Cache::repository(new ClusterCacheStore(config('clustercache.prefix')));
             });
         });
     }

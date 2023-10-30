@@ -12,12 +12,11 @@ class ClusterCacheStore implements Store
     protected CacheManager $cacheManager;
     protected MetaInformation $metaInformation;
 
-    public function __construct(MemoryDriver $memoryDriver, string $prefix = '')
+    public function __construct(string $prefix = '')
     {
         $this->setPrefix($prefix);
-        $this->cacheManager = app(CacheManager::class, ['memoryDriver' => $memoryDriver]);
+        $this->cacheManager = app(CacheManager::class);
         $this->metaInformation = app(MetaInformation::class);
-        MetaInformation::setMemoryDriver($memoryDriver->driver);
     }
 
     public function many(array $keys): array

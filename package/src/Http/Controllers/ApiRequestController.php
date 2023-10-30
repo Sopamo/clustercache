@@ -8,17 +8,18 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Sopamo\ClusterCache\CacheManager;
+use Sopamo\ClusterCache\CachedHosts;
 use Sopamo\ClusterCache\HostCommunication\Event;
 use Sopamo\ClusterCache\HostCommunication\HostCommunication;
 use Sopamo\ClusterCache\HostCommunication\Triggers\Trigger;
 use Sopamo\ClusterCache\HostHelpers;
+use Sopamo\ClusterCache\LocalCacheManager;
 use Sopamo\ClusterCache\MemoryDriver;
 use Sopamo\ClusterCache\Models\Host;
 
 class ApiRequestController extends Controller
 {
-    protected CacheManager $cacheManager;
+    protected LocalCacheManager $localCacheManager;
     public function __construct(Request $request)
     {
         if($request->hasHeader('Test-Mode')) {
@@ -31,7 +32,7 @@ class ApiRequestController extends Controller
             ]);
         }
 
-        $this->cacheManager = app(CacheManager::class, ['memoryDriver' => MemoryDriver::fromString(config('clustercache.driver'))]);
+        $this->localCacheManager = app(LocalCacheManager::class);
     }
 
     public function confirmConnectionStatus(): Response
@@ -41,12 +42,7 @@ class ApiRequestController extends Controller
 
     public function fetchHosts(): Response
     {
-        //logger('Fetching hosts in ' . HostHelpers::getHostIp());
-        //logger(json_encode(Host::pluck('ip')));
-        Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip'));
-        //logger('Putting data into local storage: ' . Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip')));
-        //logger('Fetching hosts in ' . HostHelpers::getHostIp() . ' from local storage');
-        //logger(json_encode(Cache::store('clustercache')->get('clustercache_hosts')));
+        CachedHosts::refresh();
 
         return response(HostHelpers::HOST_REQUEST_RESPONSE);
     }
@@ -67,13 +63,18 @@ class ApiRequestController extends Controller
     public function callEvent(string $key, int $eventType): Response
     {
 
-        switch ($eventType) {
-            case Event::$allEvents['CACHE_KEY_HAS_UPDATED']:
-                $this->cacheManager->deleteFromLocalCache($key);
-                break;
-            default:
-                throw new Exception('This event does not exist');
+        try{
+            switch ($eventType) {
+                case Event::$allEvents['CACHE_KEY_HAS_UPDATED']:
+                    $this->localCacheManager->delete($key);
+                    break;
+                default:
+                    throw new Exception('This event does not exist');
+            }
+        } catch (Exception $e) {
+            logger($e->getMessage());
         }
+        logger('aa');
 
         return response(HostHelpers::HOST_REQUEST_RESPONSE);
     }

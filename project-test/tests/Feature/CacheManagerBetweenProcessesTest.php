@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Artisan;
 use Sopamo\ClusterCache\CacheManager;
 use Sopamo\ClusterCache\MemoryDriver;
 use Sopamo\ClusterCache\Models\Host;
-use Tests\TestCase;
 use Tests\Unit\SingleHostTestCase;
 
 class CacheManagerBetweenProcessesTest extends SingleHostTestCase
@@ -20,7 +19,7 @@ class CacheManagerBetweenProcessesTest extends SingleHostTestCase
     {
         parent::setUp();
 
-        $this->cacheManager = app(CacheManager::class, ['memoryDriver' => MemoryDriver::fromString('SHMOP')]);
+        $this->cacheManager = app(CacheManager::class);
         $this->value = Host::factory(500)->create();
 
     }
@@ -29,7 +28,7 @@ class CacheManagerBetweenProcessesTest extends SingleHostTestCase
     public function block_putting_data_while_putting_in_other_process() {
         Artisan::call('migrate:refresh');
 
-        $key = 'key: block_putting_data_while_putting_in_other_process hhh';
+        $key = 'key:block_putting_data_while_putting_in_other_process';
 
         $this->cacheManager->delete($key);
 
@@ -43,7 +42,7 @@ class CacheManagerBetweenProcessesTest extends SingleHostTestCase
     public function block_deleting_data_while_putting_in_other_process() {
         Artisan::call('migrate:refresh');
 
-        $key = 'key: block_deleting_data_while_putting_in_other_process hhh';
+        $key = 'key:block_deleting_data_while_putting_in_other_process';
 
         $this->cacheManager->delete($key);
 
@@ -57,7 +56,7 @@ class CacheManagerBetweenProcessesTest extends SingleHostTestCase
     public function get_data_which_was_saved_by_other_process() {
         Artisan::call('migrate:refresh');
 
-        $key = 'key: get_data_which_was_saved_by_other_process';
+        $key = 'key:get_data_which_was_saved_by_other_process';
         $value = 'value';
 
         $this->cacheManager->delete($key);
