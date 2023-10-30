@@ -6,11 +6,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
-class ClusterCacheStoreTest extends TestCase
+class ClusterCacheStoreTest extends SingleHostTestCase
 {
     use RefreshDatabase;
-
-    protected string $store = 'clustercache';
 
     /** @test */
     public function it_sets_prefix() {

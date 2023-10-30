@@ -1,13 +1,14 @@
 <?php
 
-namespace Sopamo\ClusterCache\HostCommunication;
+namespace Sopamo\ClusterCache;
 
 use Illuminate\Support\Facades\Cache;
-use Sopamo\ClusterCache\HostHelpers;
+use Sopamo\ClusterCache\HostCommunication\Event;
+use Sopamo\ClusterCache\HostCommunication\HostCommunication;
 use Sopamo\ClusterCache\Models\DisconnectedHost;
 use Sopamo\ClusterCache\Models\Host;
 
-class HostCommunicationStatus
+class HostStatus
 {
     public static function init():void {
         Host::updateOrCreate([
@@ -22,9 +23,9 @@ class HostCommunicationStatus
     }
 
     public static function leave():void {
+        Cache::store('clustercache')->put('clustercache_hosts', Host::where('ip', '!=', HostHelpers::getHostIp())->pluck('ip'));
         Host::where('ip', HostHelpers::getHostIp())->delete();
         DisconnectedHost::where('from', HostHelpers::getHostIp())->orWhere('to', HostHelpers::getHostIp())->delete();
-        Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip'));
         app(HostCommunication::class)->triggerAll(Event::fromInt(Event::$allEvents['FETCH_HOSTS']));
     }
 

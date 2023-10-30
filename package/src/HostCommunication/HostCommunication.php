@@ -5,6 +5,7 @@ namespace Sopamo\ClusterCache\HostCommunication;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Sopamo\ClusterCache\Exceptions\DisconnectedWithAtLeastHalfOfHostsException;
 use Sopamo\ClusterCache\HostCommunication\Triggers\CacheKeyHasUpdatedTrigger;
 use Sopamo\ClusterCache\HostCommunication\Triggers\FetchHostsTrigger;
 use Sopamo\ClusterCache\HostCommunication\Triggers\TestConnectionToHostTrigger;
@@ -16,8 +17,13 @@ use UnhandledMatchError;
 
 class HostCommunication
 {
+    /**
+     * @throws DisconnectedWithAtLeastHalfOfHostsException
+     */
     public function triggerAll(Event $event, string $cacheKey = null): void
     {
+        $disconnectedHostCount = 0;
+
         foreach ($this->getHostIps() as $hostIp) {
             if($hostIp === HostHelpers::getHostIp()) {
                 continue;
@@ -27,11 +33,25 @@ class HostCommunication
 
             $triggerSuccessfully = $this->trigger($event, $hostIp, $cacheKey);
 
+            if(!$triggerSuccessfully) {
+                $disconnectedHostCount++;
+            }
+
             logger("Trigger result: $triggerSuccessfully");
 
-            if(!$triggerSuccessfully) {
-                $this->testConnectionFromEchHostToTargetHost($hostIp);
-            }
+            // TODO I'll decide later what to do with that code. I might use it in next steps
+//            if(!$triggerSuccessfully) {
+//                $this->testConnectionFromEchHostToTargetHost($hostIp);
+//            }
+        }
+
+        // we want to just inform all connected hosts about refreshing host state. It should be silent
+        if($event->value === Event::$allEvents['FETCH_HOSTS']) {
+            return;
+        }
+
+        if($disconnectedHostCount > Host::where('ip', '!=', HostHelpers::getHostIp())->count() / 2) {
+            throw new DisconnectedWithAtLeastHalfOfHostsException("The host is disconnected with $disconnectedHostCount hosts");
         }
     }
 
@@ -47,11 +67,12 @@ class HostCommunication
 
         $triggerSuccessfully =  $trigger->handle($hostIp, $cacheKey, $optionalData);
 
-        if($triggerSuccessfully) {
-            $this->unmarkConnectionAsDisconnected(HostHelpers::getHostIp(), $hostIp);
-        } else {
-            $this->markConnectionAsDisconnected(HostHelpers::getHostIp(), $hostIp);
-        }
+        // TODO I'll decide later what to do with that code. I might use it in next steps
+//        if($triggerSuccessfully) {
+//            $this->unmarkConnectionAsDisconnected(HostHelpers::getHostIp(), $hostIp);
+//        } else {
+//            $this->markConnectionAsDisconnected(HostHelpers::getHostIp(), $hostIp);
+//        }
 
         return $triggerSuccessfully;
     }

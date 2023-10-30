@@ -19,7 +19,7 @@ class ConnectionBetweenHostsTest extends BetweenHostsTestCase
         $host3 = $testConnectionTrigger->handle(self::HOST_CLUSTERCACHE3);
         $this->assertTrue($host3);
 
-        $host4 = $testConnectionTrigger->handle(self::HOST_DISCONNECTED_HOST);
+        $host4 = $testConnectionTrigger->handle(self::HOST_DISCONNECTED_HOST1);
         $this->assertFalse($host4);
     }
 }

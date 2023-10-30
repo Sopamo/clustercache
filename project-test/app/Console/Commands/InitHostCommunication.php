@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Sopamo\ClusterCache\HostCommunication\HostCommunicationStatus;
+use Sopamo\ClusterCache\HostStatus;
 
 class InitHostCommunication extends Command
 {
@@ -13,7 +13,7 @@ class InitHostCommunication extends Command
 
     public function handle(): int
     {
-        HostCommunicationStatus::init();
+        HostStatus::init();
 
         return Command::SUCCESS;
     }
