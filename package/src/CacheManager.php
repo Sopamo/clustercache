@@ -6,6 +6,7 @@ use InvalidArgumentException;
 use Sopamo\ClusterCache\Exceptions\CacheEntryValueIsOutOfMemoryException;
 use Sopamo\ClusterCache\Exceptions\DisconnectedWithAtLeastHalfOfHostsException;
 use Sopamo\ClusterCache\Exceptions\ExpiredLocalCacheKeyException;
+use Sopamo\ClusterCache\Exceptions\HostIsMarkedAsDisconnectedException;
 use Sopamo\ClusterCache\Exceptions\MemoryBlockIsLockedException;
 use Sopamo\ClusterCache\Exceptions\NotFoundLocalCacheKeyException;
 use Sopamo\ClusterCache\Exceptions\PutCacheException;
@@ -37,7 +38,7 @@ class CacheManager
             throw new InvalidArgumentException("The key '$key' is not allowed");
         }
 
-        if(!Host::where('ip', HostHelpers::getHostIp())->exists()) {
+        if(!Host::where('ip', HostInNetwork::getHostIp())->exists()) {
             throw new PutCacheException('Host is marked as disconnected');
         }
 
@@ -45,7 +46,7 @@ class CacheManager
             $this->hostCommunication->triggerAll(Event::fromInt(Event::$allEvents['TEST_CONNECTION']), $key);
 
         } catch (DisconnectedWithAtLeastHalfOfHostsException) {
-            HostStatus::leave();
+            HostInNetwork::leave();
             throw new PutCacheException('Host is disconnected with at least half of hosts');
         }
 
@@ -91,12 +92,23 @@ class CacheManager
      * @param  string  $key
      * @param  mixed|null  $default
      * @return mixed
+     * @throws HostIsMarkedAsDisconnectedException
      */
     public function get(string $key, mixed $default = null): mixed
     {
-        if(!HostStatus::isConnected()) {
-            if(config('clustercache.disconnected_mode' === 'db')) {
+        if(!HostInNetwork::isConnected()) {
+            if(config('clustercache.disconnected_mode') === 'db') {
+                /** @var CacheEntry|null $cacheEntry */
                 $cacheEntry = CacheEntry::where('key', $key)->first();
+
+                if (!$cacheEntry) {
+                    $this->localCacheManager->delete($key);
+                    return $default;
+                }
+
+                return $cacheEntry->isExpired() ?  $default : $cacheEntry->value;
+            } else {
+                throw new HostIsMarkedAsDisconnectedException('The host ' . HostInNetwork::getHostIp() . ' is marked as disconnected');
             }
         }
         try {
@@ -107,7 +119,7 @@ class CacheManager
         } catch (MemoryBlockIsLockedException) {
             return $default;
         } catch (NotFoundLocalCacheKeyException) {
-            /** @var CacheEntry $cacheEntry */
+            /** @var CacheEntry|null $cacheEntry */
             $cacheEntry = CacheEntry::where('key', $key)->first();
 
             if (!$cacheEntry) {

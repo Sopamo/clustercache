@@ -78,6 +78,18 @@ class MetaInformationTest extends TestCase
     }
 
     /** @test */
+    function it_gets_all_cache_keys() {
+        $key = 'cache key: it_gets_data';
+
+        $this->assertNull($this->metaInformation->get($key));
+
+        $this->metaInformation->put($key, $this->defaultMetaInformationData);
+
+        $this->assertIsArray($this->metaInformation->getAllCacheKeys());
+        $this->assertEquals([$key], $this->metaInformation->getAllCacheKeys());
+    }
+
+    /** @test */
     function it_tries_to_get_data_for_cache_key_which_doesnt_exist() {
         $key = 'cache key doesnt exist';
 

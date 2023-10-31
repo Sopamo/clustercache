@@ -31,14 +31,13 @@ class MetaInformation
         }
         return null;
     }
-
-    private function getAll(): array
+    public function getAllCacheKeys(): array
     {
-        $data = SelectedMemoryDriver::$memoryDriver->driver->get(self::RESERVED_KEY, self::RESERVED_LENGTH_IN_BYTES);
-        if (!$data) {
-            return [];
-        }
-        return Serialization::unserialize($data);
+        $data = $this->getAll();
+        $keys = array_keys($data);
+        return array_filter($keys, function (string $key) {
+            return !in_array($key, CacheKey::INTERNAL_USED_KEYS);
+        });
     }
 
     public function delete(string $key): void
@@ -60,5 +59,14 @@ class MetaInformation
         SelectedMemoryDriver::$memoryDriver->driver->put(self::RESERVED_KEY, Serialization::serialize($data), self::RESERVED_LENGTH_IN_BYTES);
 
         return $data[$key];
+    }
+
+    private function getAll(): array
+    {
+        $data = SelectedMemoryDriver::$memoryDriver->driver->get(self::RESERVED_KEY, self::RESERVED_LENGTH_IN_BYTES);
+        if (!$data) {
+            return [];
+        }
+        return Serialization::unserialize($data);
     }
 }

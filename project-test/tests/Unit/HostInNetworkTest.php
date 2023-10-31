@@ -4,12 +4,11 @@ namespace Tests\Unit;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Sopamo\ClusterCache\CachedHosts;
-use Sopamo\ClusterCache\HostHelpers;
-use Sopamo\ClusterCache\HostStatus;
+use Sopamo\ClusterCache\HostInNetwork;
 use Sopamo\ClusterCache\Models\Host;
 use Tests\TestCase;
 
-class HostStatusTest extends TestCase
+class HostInNetworkTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -24,21 +23,27 @@ class HostStatusTest extends TestCase
     /**
      * @test
      */
+    public function get_host_ip():void {
+        $this->assertGreaterThan(0, strlen(HostInNetwork::getHostIp()));
+    }
+    /**
+     * @test
+     */
     public function init_works():void{
         $this->assertCount(0, Host::all());
         $this->assertCount(0, CachedHosts::get());
 
-        HostStatus::init();
+        HostInNetwork::join();
 
         $this->assertCount(1, Host::all());
-        $this->assertEquals(HostHelpers::getHostIp(), Host::first()->ip);
-        $this->assertEquals([HostHelpers::getHostIp()], CachedHosts::get());
+        $this->assertEquals(HostInNetwork::getHostIp(), Host::first()->ip);
+        $this->assertEquals([HostInNetwork::getHostIp()], CachedHosts::get());
 
-        HostStatus::init();
+        HostInNetwork::join();
 
         $this->assertCount(1, Host::all());
-        $this->assertEquals(HostHelpers::getHostIp(), Host::first()->ip);
-        $this->assertEquals([HostHelpers::getHostIp()], CachedHosts::get());
+        $this->assertEquals(HostInNetwork::getHostIp(), Host::first()->ip);
+        $this->assertEquals([HostInNetwork::getHostIp()], CachedHosts::get());
     }
 
     /**
@@ -48,13 +53,13 @@ class HostStatusTest extends TestCase
         $this->assertCount(0, Host::all());
         $this->assertCount(0, CachedHosts::get());
 
-        HostStatus::init();
+        HostInNetwork::join();
 
         $this->assertCount(1, Host::all());
-        $this->assertEquals(HostHelpers::getHostIp(), Host::first()->ip);
-        $this->assertEquals([HostHelpers::getHostIp()], CachedHosts::get());
+        $this->assertEquals(HostInNetwork::getHostIp(), Host::first()->ip);
+        $this->assertEquals([HostInNetwork::getHostIp()], CachedHosts::get());
 
-        HostStatus::leave();
+        HostInNetwork::leave();
 
         $this->assertCount(0, Host::all());
         $this->assertCount(0, CachedHosts::get());
@@ -64,19 +69,19 @@ class HostStatusTest extends TestCase
      * @test
      */
     public function host_is_connected():void{
-        $this->assertTrue(HostStatus::isConnected());
+        $this->assertTrue(HostInNetwork::isConnected());
 
-        HostStatus::setConnectionStatus(true);
+        HostInNetwork::markAsConnected();
 
-        $this->assertTrue(HostStatus::isConnected());
+        $this->assertTrue(HostInNetwork::isConnected());
     }
 
     /**
      * @test
      */
     public function host_is_disconnected():void{
-        HostStatus::setConnectionStatus(false);
+        HostInNetwork::markAsDisconnected();
 
-        $this->assertFalse(HostStatus::isConnected());
+        $this->assertFalse(HostInNetwork::isConnected());
     }
 }

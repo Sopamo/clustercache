@@ -2,11 +2,8 @@
 
 namespace Tests\Unit;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Cache;
 use Sopamo\ClusterCache\CachedHosts;
-use Sopamo\ClusterCache\HostCommunication\Triggers\Trigger;
-use Sopamo\ClusterCache\HostHelpers;
+use Sopamo\ClusterCache\HostInNetwork;
 use Sopamo\ClusterCache\Models\Host;
 use Tests\TestCase;
 
@@ -18,8 +15,10 @@ class SingleHostTestCase extends TestCase
         parent::setUp();
 
         Host::updateOrCreate([
-            'ip' => HostHelpers::getHostIp()
+            'ip' => HostInNetwork::getHostIp()
         ]);
+
+        HostInNetwork::markAsConnected();
 
         CachedHosts::refresh();
     }

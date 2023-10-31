@@ -6,16 +6,14 @@ use App\Http\Controllers\Controller;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Sopamo\ClusterCache\CachedHosts;
 use Sopamo\ClusterCache\HostCommunication\Event;
 use Sopamo\ClusterCache\HostCommunication\HostCommunication;
 use Sopamo\ClusterCache\HostCommunication\Triggers\Trigger;
 use Sopamo\ClusterCache\HostHelpers;
+use Sopamo\ClusterCache\HostInNetwork;
 use Sopamo\ClusterCache\LocalCacheManager;
-use Sopamo\ClusterCache\MemoryDriver;
-use Sopamo\ClusterCache\Models\Host;
 
 class ApiRequestController extends Controller
 {
@@ -49,7 +47,7 @@ class ApiRequestController extends Controller
 
     public function testConnectionToHost(string $hostIp,  HostCommunication $hostCommunication): Response
     {
-        logger('testing hosts in ' . HostHelpers::getHostIp());
+        logger('testing hosts in ' . HostInNetwork::getHostIp());
         logger('Host to test: ' . $hostIp);
 
         $hostCommunication->trigger(Event::fromInt(Event::$allEvents['TEST_CONNECTION']), $hostIp);

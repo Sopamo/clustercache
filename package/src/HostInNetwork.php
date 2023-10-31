@@ -9,11 +9,11 @@ use Sopamo\ClusterCache\HostCommunication\HostCommunication;
 use Sopamo\ClusterCache\Models\DisconnectedHost;
 use Sopamo\ClusterCache\Models\Host;
 
-class HostStatus
+class HostInNetwork
 {
-    public static function init():void {
+    public static function join():void {
         Host::updateOrCreate([
-            'ip' => HostHelpers::getHostIp()
+            'ip' => self::getHostIp()
         ]);
         CachedHosts::refresh();
         //logger('Putting cache in host ' . HostHelpers::getHostIp() . ': ' . Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip')));
@@ -25,9 +25,9 @@ class HostStatus
     }
 
     public static function leave():void {
-        Host::where('ip', HostHelpers::getHostIp())->delete();
+        Host::where('ip', self::getHostIp())->delete();
         CachedHosts::refresh();
-        DisconnectedHost::where('from', HostHelpers::getHostIp())->orWhere('to', HostHelpers::getHostIp())->delete();
+        DisconnectedHost::where('from', self::getHostIp())->orWhere('to', self::getHostIp())->delete();
         app(HostCommunication::class)->triggerAll(Event::fromInt(Event::$allEvents['FETCH_HOSTS']));
     }
 
@@ -42,22 +42,28 @@ class HostStatus
         }
     }
 
-    public static function setConnectionStatus( bool $isConnected): void {
-        /** @var LocalCacheManager $localCacheManager */
-        $localCacheManager = app(LocalCacheManager::class);
+    public static function getHostIp():string {
+        $ips = exec('hostname -i');
 
-        $localCacheManager->put(CacheKey::INTERNAL_USED_KEYS['isConnected'], $isConnected, Carbon::now()->getTimestamp());
+        if(!$ips) {
+            return '';
+        }
+
+        return explode(' ', $ips)[0];
     }
 
-    public static function testConnections():void {
-        $hostCommunication =  app(HostCommunication::class);
-        foreach (CachedHosts::get() as $hostIp) {
-            if ($hostIp === HostHelpers::getHostIp()) {
-                continue;
-            }
+    public static function markAsConnected(): void {
+        self::updateIsConnectedFlag(true);
+    }
 
-            logger("$hostIp: ");
-            logger($hostCommunication->trigger(Event::fromInt(Event::$allEvents['TEST_CONNECTION']), $hostIp));
-        }
+    public static function markAsDisconnected(): void {
+        self::updateIsConnectedFlag(false);
+    }
+
+    private static function updateIsConnectedFlag(bool $isConnected): void
+    {
+        /** @var LocalCacheManager $localCacheManager */
+        $localCacheManager = app(LocalCacheManager::class);
+        $localCacheManager->put(CacheKey::INTERNAL_USED_KEYS['isConnected'], $isConnected, Carbon::now()->getTimestamp());
     }
 }

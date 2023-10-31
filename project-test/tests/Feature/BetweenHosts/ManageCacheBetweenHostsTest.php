@@ -5,8 +5,7 @@ namespace Tests\Feature\BetweenHosts;
 use Illuminate\Support\Facades\Cache;
 use Sopamo\ClusterCache\CachedHosts;
 use Sopamo\ClusterCache\Exceptions\PutCacheException;
-use Sopamo\ClusterCache\HostCommunication\Triggers\TestConnectionTrigger;
-use Sopamo\ClusterCache\HostHelpers;
+use Sopamo\ClusterCache\HostInNetwork;
 use Sopamo\ClusterCache\Models\Host;
 
 class ManageCacheBetweenHostsTest extends BetweenHostsTestCase
@@ -84,7 +83,7 @@ class ManageCacheBetweenHostsTest extends BetweenHostsTestCase
 
         $this->expectException(PutCacheException::class);
         Cache::store($this->store)->put('key', 'value');
-        $this->assertNull(Host::where('ip', '!', HostHelpers::getHostIp())->first());
+        $this->assertNull(Host::where('ip', '!', HostInNetwork::getHostIp())->first());
     }
 
     private function saveInformationAboutAllConnectedHosts():void {
