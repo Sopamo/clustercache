@@ -3,6 +3,7 @@
 namespace Sopamo\ClusterCache;
 
 use InvalidArgumentException;
+use Sopamo\ClusterCache\Events\CacheGettingWasCalled;
 use Sopamo\ClusterCache\Exceptions\CacheEntryValueIsOutOfMemoryException;
 use Sopamo\ClusterCache\Exceptions\DisconnectedWithAtLeastHalfOfHostsException;
 use Sopamo\ClusterCache\Exceptions\ExpiredLocalCacheKeyException;
@@ -12,6 +13,7 @@ use Sopamo\ClusterCache\Exceptions\NotFoundLocalCacheKeyException;
 use Sopamo\ClusterCache\Exceptions\PutCacheException;
 use Sopamo\ClusterCache\HostCommunication\Event;
 use Sopamo\ClusterCache\HostCommunication\HostCommunication;
+use Sopamo\ClusterCache\Jobs\CheckIfHostIsConnected;
 use Sopamo\ClusterCache\LockingMechanisms\DBLocker;
 use Sopamo\ClusterCache\Models\CacheEntry;
 use Sopamo\ClusterCache\Models\Host;
@@ -96,48 +98,58 @@ class CacheManager
      */
     public function get(string $key, mixed $default = null): mixed
     {
-        if(!HostInNetwork::isConnected()) {
-            if(config('clustercache.disconnected_mode') === 'db') {
+        $getCachedValue = function () use ($default, $key) {
+            if (!HostInNetwork::isConnected()) {
+                if (config('clustercache.disconnected_mode') === 'db') {
+                    /** @var CacheEntry|null $cacheEntry */
+                    $cacheEntry = CacheEntry::where('key', $key)->first();
+
+                    if (!$cacheEntry) {
+                        $this->localCacheManager->delete($key);
+
+                        return $default;
+                    }
+
+                    return $cacheEntry->isExpired() ? $default : $cacheEntry->value;
+                } else {
+                    CheckIfHostIsConnected::dispatchAfterResponse($key);
+                    throw new HostIsMarkedAsDisconnectedException('The host '.HostInNetwork::getHostIp().' is marked as disconnected');
+                }
+            }
+            try {
+                return $this->localCacheManager->get($key);
+            } catch (ExpiredLocalCacheKeyException) {
+                $this->localCacheManager->delete($key);
+                return $default;
+            } catch (MemoryBlockIsLockedException) {
+                return $default;
+            } catch (NotFoundLocalCacheKeyException) {
                 /** @var CacheEntry|null $cacheEntry */
                 $cacheEntry = CacheEntry::where('key', $key)->first();
 
                 if (!$cacheEntry) {
+                    logger(json_encode(CacheEntry::all()));
+                    logger(CacheEntry::getConnectionResolver()->getDefaultConnection());
+                    logger("$key does not exist in DB");
                     $this->localCacheManager->delete($key);
                     return $default;
                 }
 
-                return $cacheEntry->isExpired() ?  $default : $cacheEntry->value;
-            } else {
-                throw new HostIsMarkedAsDisconnectedException('The host ' . HostInNetwork::getHostIp() . ' is marked as disconnected');
-            }
-        }
-        try {
-            return $this->localCacheManager->get($key);
-        } catch (ExpiredLocalCacheKeyException) {
-            $this->localCacheManager->delete($key);
-            return $default;
-        } catch (MemoryBlockIsLockedException) {
-            return $default;
-        } catch (NotFoundLocalCacheKeyException) {
-            /** @var CacheEntry|null $cacheEntry */
-            $cacheEntry = CacheEntry::where('key', $key)->first();
+                if ($cacheEntry->isExpired()) {
+                    return $default;
+                }
 
-            if (!$cacheEntry) {
-                logger(json_encode(CacheEntry::all()));
-                logger(CacheEntry::getConnectionResolver()->getDefaultConnection());
-                logger("$key does not exist in DB");
-                $this->localCacheManager->delete($key);
-                return $default;
+                $this->localCacheManager->put($cacheEntry->key, $cacheEntry->value,
+                    $cacheEntry->updated_at->getTimestamp(), $cacheEntry->ttl);
+                $cachedValue = $cacheEntry->value;
             }
+            return $cachedValue;
+        };
 
-            if($cacheEntry->isExpired()) {
-                return $default;
-            }
+        $value = $getCachedValue();
 
-            $this->localCacheManager->put($cacheEntry->key, $cacheEntry->value, $cacheEntry->updated_at->getTimestamp(), $cacheEntry->ttl);
-            $cachedValue = $cacheEntry->value;
-        }
-        return $cachedValue;
+        CheckIfHostIsConnected::dispatchAfterResponse($key);
+        return $value;
     }
 
     /**
