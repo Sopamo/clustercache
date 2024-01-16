@@ -113,4 +113,11 @@ class LocalCacheManager
 
         return true;
     }
+    public function clear():bool {
+        foreach ($this->metaInformation->getAllCacheKeys() as $key) {
+            $this->delete($key);
+        }
+
+        return true;
+    }
 }

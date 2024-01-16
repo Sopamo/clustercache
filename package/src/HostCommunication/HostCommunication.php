@@ -2,7 +2,6 @@
 
 namespace Sopamo\ClusterCache\HostCommunication;
 
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Sopamo\ClusterCache\CachedHosts;
@@ -11,7 +10,7 @@ use Sopamo\ClusterCache\HostCommunication\Triggers\CacheKeyHasUpdatedTrigger;
 use Sopamo\ClusterCache\HostCommunication\Triggers\FetchHostsTrigger;
 use Sopamo\ClusterCache\HostCommunication\Triggers\TestConnectionToHostTrigger;
 use Sopamo\ClusterCache\HostCommunication\Triggers\TestConnectionTrigger;
-use Sopamo\ClusterCache\HostHelpers;
+use Sopamo\ClusterCache\HostInNetwork;
 use Sopamo\ClusterCache\Models\DisconnectedHost;
 use Sopamo\ClusterCache\Models\Host;
 use UnhandledMatchError;
@@ -26,11 +25,11 @@ class HostCommunication
         $disconnectedHostCount = 0;
 
         foreach (CachedHosts::get() as $hostIp) {
-            if($hostIp === HostHelpers::getHostIp()) {
+            if($hostIp === HostInNetwork::getHostIp()) {
                 continue;
             }
 
-            logger(" Event: '$event->value', from: " . HostHelpers::getHostIp() .", to: $hostIp");
+            logger(" Event: '$event->value', from: " . HostInNetwork::getHostIp() .", to: $hostIp");
 
             $triggerSuccessfully = $this->trigger($event, $hostIp, $cacheKey);
 
@@ -51,7 +50,7 @@ class HostCommunication
             return;
         }
 
-        if($disconnectedHostCount > Host::where('ip', '!=', HostHelpers::getHostIp())->count() / 2) {
+        if($disconnectedHostCount > Host::where('ip', '!=', HostInNetwork::getHostIp())->count() / 2) {
             throw new DisconnectedWithAtLeastHalfOfHostsException("The host is disconnected with $disconnectedHostCount hosts");
         }
     }
@@ -80,7 +79,7 @@ class HostCommunication
 
     protected function testConnectionFromEchHostToTargetHost(string $targetHostIp):void {
         foreach (CachedHosts::get() as $hostIp) {
-            if ($hostIp === HostHelpers::getHostIp() || $hostIp === $targetHostIp) {
+            if ($hostIp === HostInNetwork::getHostIp() || $hostIp === $targetHostIp) {
                 continue;
             }
 

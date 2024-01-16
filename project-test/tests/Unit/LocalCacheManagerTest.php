@@ -24,21 +24,18 @@ class LocalCacheManagerTest extends SingleHostTestCase
         parent::setUp();
 
         $this->localCacheManager = app(LocalCacheManager::class);
+        $this->localCacheManager->clear();
         $this->value = Host::factory(500)->create();
     }
 
     /** @test */
     public function put_data() {
-        $this->localCacheManager->delete($this->cacheKey);
-
         $this->assertTrue($this->localCacheManager->put($this->cacheKey, $this->value, Carbon::now()->getTimestamp()));
 
     }
 
     /** @test */
     public function get_data() {
-        $this->localCacheManager->delete($this->cacheKey);
-
         $this->expectException(NotFoundLocalCacheKeyException::class);
         $this->localCacheManager->get($this->cacheKey);
 
@@ -49,8 +46,6 @@ class LocalCacheManagerTest extends SingleHostTestCase
 
     /** @test */
     public function get_expired_data() {
-        $this->localCacheManager->delete($this->cacheKey);
-
         $this->expectException(NotFoundLocalCacheKeyException::class);
         $this->localCacheManager->get($this->cacheKey);
 
@@ -67,8 +62,6 @@ class LocalCacheManagerTest extends SingleHostTestCase
             MemoryBlockLockerWithInfiniteLocking::class
         );
 
-        $this->localCacheManager->delete($this->cacheKey);
-
         $this->expectException(NotFoundLocalCacheKeyException::class);
         $this->localCacheManager->get($this->cacheKey);
 
@@ -80,8 +73,6 @@ class LocalCacheManagerTest extends SingleHostTestCase
 
     /** @test */
     public function update_data() {
-        $this->localCacheManager->delete($this->cacheKey);
-
         $this->expectException(NotFoundLocalCacheKeyException::class);
         $this->localCacheManager->get($this->cacheKey);
 
@@ -98,8 +89,6 @@ class LocalCacheManagerTest extends SingleHostTestCase
 
     /** @test */
     public function delete_data() {
-        $this->localCacheManager->delete($this->cacheKey);
-
         $this->expectException(NotFoundLocalCacheKeyException::class);
         $this->localCacheManager->get($this->cacheKey);
 
@@ -111,5 +100,27 @@ class LocalCacheManagerTest extends SingleHostTestCase
 
         $this->expectException(NotFoundLocalCacheKeyException::class);
         $this->localCacheManager->get($this->cacheKey);
+    }
+
+    /** @test */
+    public function clear_data() {
+        $key2 = $this->cacheKey . '2';
+
+        $this->expectException(NotFoundLocalCacheKeyException::class);
+        $this->localCacheManager->get($this->cacheKey);
+        $this->expectException(NotFoundLocalCacheKeyException::class);
+        $this->localCacheManager->get($key2);
+
+        $this->localCacheManager->put($this->cacheKey, $this->value, Carbon::now()->getTimestamp());
+        $this->assertEquals($this->value, $this->localCacheManager->get($this->cacheKey));
+        $this->localCacheManager->put($key2, $this->value, Carbon::now()->getTimestamp());
+        $this->assertEquals($this->value, $this->localCacheManager->get($key2));
+
+        $this->localCacheManager->clear();
+
+        $this->expectException(NotFoundLocalCacheKeyException::class);
+        $this->localCacheManager->get($this->cacheKey);
+        $this->expectException(NotFoundLocalCacheKeyException::class);
+        $this->localCacheManager->get($key2);
     }
 }

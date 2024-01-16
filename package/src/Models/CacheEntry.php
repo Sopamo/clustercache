@@ -10,6 +10,7 @@ use Illuminate\Support\Carbon;
 use Sopamo\ClusterCache\Database\Factories\CacheEntryFactory;
 use Sopamo\ClusterCache\Exceptions\CacheEntryValueIsOutOfMemoryException;
 use Sopamo\ClusterCache\Serialization;
+use Sopamo\ClusterCache\TimeHelpers;
 
 /**
  * @property int $id
@@ -17,8 +18,8 @@ use Sopamo\ClusterCache\Serialization;
  * @property mixed $value
  * @property int $ttl
  * @property Carbon|null $locked_at
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  */
 class CacheEntry extends Model
 {
@@ -52,5 +53,18 @@ class CacheEntry extends Model
                 return $serializedValue;
             },
         );
+    }
+
+    public function isExpired():bool {
+        if(!$this->ttl) {
+            return false;
+        }
+
+        $nowFromDB = Carbon::createFromFormat('Y-m-d H:i:s', TimeHelpers::getNowFromDB());
+
+        assert($nowFromDB, 'It has to be a Carbon object');
+
+        return $nowFromDB->greaterThan($this->updated_at->addSeconds($this->ttl));
+
     }
 }
