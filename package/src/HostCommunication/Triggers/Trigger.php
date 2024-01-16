@@ -8,12 +8,12 @@ abstract class Trigger
     public static function setRequestHeaders(array $requestHeaders):void {
         static::$requestHeaders = $requestHeaders;
     }
-    protected function executeRequest(string $url): string|bool
+    protected function executeRequest(string $url): string
     {
         $ch = curl_init($url);
 
         if(!$ch) {
-            return false;
+            return '';
         }
 
         curl_setopt($ch, CURLOPT_HTTPHEADER, static::$requestHeaders);
@@ -22,6 +22,6 @@ abstract class Trigger
         $response = curl_exec($ch);
         curl_close($ch);
 
-        return $response;
+        return (string)$response;
     }
 }

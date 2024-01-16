@@ -8,8 +8,8 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Sopamo\ClusterCache\HostCommunication\HostResponse;
 use Sopamo\ClusterCache\HostCommunication\Triggers\Trigger;
-use Sopamo\ClusterCache\HostHelpers;
 
 /**
  * This controller is only used by tests. It shouldn't be used by any prod code
@@ -39,6 +39,6 @@ class TestApiRequestController extends Controller
     {
         Cache::store('clustercache')->put($cacheKey, $request->input('cacheValue'));
 
-        return response(HostHelpers::HOST_REQUEST_RESPONSE);
+        return response(HostResponse::HOST_REQUEST_RESPONSE);
     }
 }

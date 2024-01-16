@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\DB;
 use Sopamo\ClusterCache\CachedHosts;
 use Sopamo\ClusterCache\HostCommunication\Event;
 use Sopamo\ClusterCache\HostCommunication\HostCommunication;
+use Sopamo\ClusterCache\HostCommunication\HostResponse;
 use Sopamo\ClusterCache\HostCommunication\Triggers\Trigger;
-use Sopamo\ClusterCache\HostHelpers;
 use Sopamo\ClusterCache\HostInNetwork;
 use Sopamo\ClusterCache\LocalCacheManager;
 
@@ -35,14 +35,14 @@ class ApiRequestController extends Controller
 
     public function confirmConnectionStatus(): Response
     {
-        return response(HostHelpers::HOST_REQUEST_RESPONSE);
+        return response(HostResponse::HOST_REQUEST_RESPONSE);
     }
 
     public function fetchHosts(): Response
     {
         CachedHosts::refresh();
 
-        return response(HostHelpers::HOST_REQUEST_RESPONSE);
+        return response(HostResponse::HOST_REQUEST_RESPONSE);
     }
 
     public function testConnectionToHost(string $hostIp,  HostCommunication $hostCommunication): Response
@@ -52,7 +52,7 @@ class ApiRequestController extends Controller
 
         $hostCommunication->trigger(Event::fromInt(Event::$allEvents['TEST_CONNECTION']), $hostIp);
 
-        return response(HostHelpers::HOST_REQUEST_RESPONSE);
+        return response(HostResponse::HOST_REQUEST_RESPONSE);
     }
 
     /**
@@ -74,6 +74,16 @@ class ApiRequestController extends Controller
         }
         logger('aa');
 
-        return response(HostHelpers::HOST_REQUEST_RESPONSE);
+        return response(HostResponse::HOST_REQUEST_RESPONSE);
+    }
+
+    public function informHostCacheKeyHasUpdated(string $key, string $hostToInform, HostCommunication $hostCommunication): Response
+    {
+        $response = $hostCommunication->trigger(Event::fromInt(Event::$allEvents['CACHE_KEY_HAS_UPDATED']), $hostToInform, $key);
+
+        if($response->wasSuccessful()) {
+            return response(HostResponse::HOST_HAS_BEEN_INFORMED);
+        }
+        return response(HostResponse::HOST_HAS_NOT_BEEN_INFORMED);
     }
 }

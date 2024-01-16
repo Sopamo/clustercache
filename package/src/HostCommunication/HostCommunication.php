@@ -5,9 +5,11 @@ namespace Sopamo\ClusterCache\HostCommunication;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Sopamo\ClusterCache\CachedHosts;
+use Sopamo\ClusterCache\CacheKey;
 use Sopamo\ClusterCache\Exceptions\DisconnectedWithAtLeastHalfOfHostsException;
 use Sopamo\ClusterCache\HostCommunication\Triggers\CacheKeyHasUpdatedTrigger;
 use Sopamo\ClusterCache\HostCommunication\Triggers\FetchHostsTrigger;
+use Sopamo\ClusterCache\HostCommunication\Triggers\InformHostCacheKeyHasUpdatedTrigger;
 use Sopamo\ClusterCache\HostCommunication\Triggers\TestConnectionToHostTrigger;
 use Sopamo\ClusterCache\HostCommunication\Triggers\TestConnectionTrigger;
 use Sopamo\ClusterCache\HostInNetwork;
@@ -31,18 +33,13 @@ class HostCommunication
 
             logger(" Event: '$event->value', from: " . HostInNetwork::getHostIp() .", to: $hostIp");
 
-            $triggerSuccessfully = $this->trigger($event, $hostIp, $cacheKey);
+            $triggerSuccessfully = $this->trigger($event, $hostIp, $cacheKey)->wasSuccessful();
 
             if(!$triggerSuccessfully) {
                 $disconnectedHostCount++;
             }
 
             logger("Trigger result: $triggerSuccessfully");
-
-            // TODO I'll decide later what to do with that code. I might use it in next steps
-//            if(!$triggerSuccessfully) {
-//                $this->testConnectionFromEchHostToTargetHost($hostIp);
-//            }
         }
 
         // we want to just inform all connected hosts about refreshing host state. It should be silent
@@ -50,47 +47,64 @@ class HostCommunication
             return;
         }
 
+        $this->removeDisconnectedHosts();
+
         if($disconnectedHostCount > Host::where('ip', '!=', HostInNetwork::getHostIp())->count() / 2) {
             throw new DisconnectedWithAtLeastHalfOfHostsException("The host is disconnected with $disconnectedHostCount hosts");
         }
     }
 
-    public function trigger(Event $event, string $hostIp, string $cacheKey = null, array $optionalData = []): bool
+    public function trigger(Event $event, string $hostIp, string $cacheKey = null, array $optionalData = []): HostResponse
     {
         $trigger = match($event->value) {
             Event::$allEvents['TEST_CONNECTION'] => new TestConnectionTrigger(),
             Event::$allEvents['TEST_CONNECTION_TO_HOST'] => new TestConnectionToHostTrigger(),
             Event::$allEvents['FETCH_HOSTS'] => new FetchHostsTrigger(),
             Event::$allEvents['CACHE_KEY_HAS_UPDATED'] => new CacheKeyHasUpdatedTrigger(),
+            Event::$allEvents['INFORM_HOST_CACHE_KEY_HAS_UPDATED'] => new InformHostCacheKeyHasUpdatedTrigger(),
             default => throw new UnhandledMatchError('The event does not exist'),
         };
 
-        $triggerSuccessfully =  $trigger->handle($hostIp, $cacheKey, $optionalData);
+        $response = $trigger->handle($hostIp, $cacheKey, $optionalData);
 
-        // TODO I'll decide later what to do with that code. I might use it in next steps
-//        if($triggerSuccessfully) {
-//            $this->unmarkConnectionAsDisconnected(HostHelpers::getHostIp(), $hostIp);
-//        } else {
-//            $this->markConnectionAsDisconnected(HostHelpers::getHostIp(), $hostIp);
-//        }
+        if($event->value === Event::$allEvents['FETCH_HOSTS']) {
+            return $response;
+        }
 
-        return $triggerSuccessfully;
+        if($response->wasSuccessful()) {
+            $this->unmarkConnectionAsDisconnected(HostInNetwork::getHostIp(), $hostIp);
+        } else {
+            $this->markConnectionAsDisconnected(HostInNetwork::getHostIp(), $hostIp);
+
+            if($event->value === Event::$allEvents['CACHE_KEY_HAS_UPDATED']) {
+                $this->tryToUseOtherHostsToNotify($cacheKey, $hostIp);
+            }
+        }
+
+        return $response;
     }
 
-    protected function testConnectionFromEchHostToTargetHost(string $targetHostIp):void {
+    protected function tryToUseOtherHostsToNotify(string $cacheKey, string $hostToInform):void {
+        $anyHostResponded = false;
+
         foreach (CachedHosts::get() as $hostIp) {
-            if ($hostIp === HostInNetwork::getHostIp() || $hostIp === $targetHostIp) {
+            if ($hostIp === HostInNetwork::getHostIp()) {
                 continue;
             }
 
-            logger(' Trigger Test Connection in host: ' . $hostIp);
+            $response = $this->trigger(Event::fromInt(Event::$allEvents['INFORM_HOST_CACHE_KEY_HAS_UPDATED']), $hostIp, $cacheKey, ['hostToInform' => $hostToInform]);
 
-            $trigger = $this->trigger(Event::fromInt(Event::$allEvents['TEST_CONNECTION_TO_HOST']), $hostIp, null, ['hostIp' => $targetHostIp]);
-
-            logger("Trigger test result: $trigger");
+            if($response->wasSuccessful()) {
+                $anyHostResponded = true;
+            }
         }
-        logger('trigger testConnection to all!');
-        $this->removeDisconnectedHosts();
+
+        if(!$anyHostResponded) {
+            // TODO:Implement the "no" path for the question "Could any host tell the source host that they tried to tell the target host about the update?"
+        } else {
+            $this->removeDisconnectedHosts();
+        }
+
     }
 
     protected function markConnectionAsDisconnected(string $from, string $to):void {
@@ -126,6 +140,6 @@ class HostCommunication
 
         Host::whereIn('ip', $hostsToRemove)->delete();
         DisconnectedHost::whereIn('from', $hostsToRemove)->orWhereIn('to', $hostsToRemove)->delete();
-        Cache::store('clustercache')->put('clustercache_hosts', Host::pluck('ip'));
+        Cache::store('clustercache')->put(CacheKey::INTERNAL_USED_KEYS['hosts'], Host::pluck('ip'));
     }
 }
