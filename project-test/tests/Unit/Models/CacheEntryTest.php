@@ -92,6 +92,7 @@ class CacheEntryTest extends TestCase
     /** @test */
     function cache_entries_cant_have_duplicated_keys()
     {
+        CacheEntry::truncate();
         $this->assertCount(0, CacheEntry::all());
 
         CacheEntry::factory()->create(['key' => 'cache key']);

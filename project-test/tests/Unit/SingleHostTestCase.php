@@ -10,7 +10,6 @@ use Tests\TestCase;
 
 class SingleHostTestCase extends TestCase
 {
-
     public function setUp(): void
     {
         parent::setUp();
@@ -18,6 +17,7 @@ class SingleHostTestCase extends TestCase
         Trigger::setRequestHeaders([
             'Test-Mode: true',
         ]);
+        Host::truncate();
 
         Host::updateOrCreate([
             'ip' => HostInNetwork::getHostIp()

@@ -11,6 +11,13 @@ class HostTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        Host::truncate();
+    }
+
     /** @test */
     function it_has_ip()
     {

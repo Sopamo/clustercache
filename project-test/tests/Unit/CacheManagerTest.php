@@ -2,24 +2,16 @@
 
 namespace Tests\Unit;
 
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Queue\Jobs\Job;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Event;
 use InvalidArgumentException;
 use Sopamo\ClusterCache\CacheKey;
 use Sopamo\ClusterCache\CacheManager;
-use Sopamo\ClusterCache\Events\CacheGettingWasCalled;
 use Sopamo\ClusterCache\Exceptions\HostIsMarkedAsDisconnectedException;
 use Sopamo\ClusterCache\HostInNetwork;
-use Sopamo\ClusterCache\Jobs\CheckIfHostIsConnected;
 use Sopamo\ClusterCache\LocalCacheManager;
-use Sopamo\ClusterCache\MemoryDriver;
 use Sopamo\ClusterCache\Models\Host;
-use Tests\TestCase;
 
 class CacheManagerTest extends SingleHostTestCase
 {
@@ -27,13 +19,18 @@ class CacheManagerTest extends SingleHostTestCase
 
     protected CacheManager $cacheManager;
     protected string $cacheKey = 'key';
-    protected Collection|Model $value;
+    protected \Illuminate\Support\Collection $value;
     public function setUp(): void
     {
         parent::setUp();
 
+        $randomArray = [];
+        for ($i = 0; $i < 100000; $i++) {
+            $randomArray[] = rand();
+        }
+
         $this->cacheManager = app(CacheManager::class);
-        $this->value = Host::factory(500)->create();
+        $this->value = collect($randomArray);
     }
 
     /** @test */
